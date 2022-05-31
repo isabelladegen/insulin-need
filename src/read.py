@@ -2,9 +2,13 @@ import glob
 import zipfile
 from dataclasses import dataclass
 from io import TextIOWrapper
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 import logging
 import pandas as pd
+from pandas.errors import ParserError
+
 from src.configurations import Configuration
 
 
@@ -74,6 +78,7 @@ def read_bg_from_zip(file_name, config):
 
             # read entries into pandas dataframe
             with archive.open(file, mode="r") as bg_file:
+                # try:
                 df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
                                  header=None,
                                  # parse_dates=[0],
@@ -84,7 +89,11 @@ def read_bg_from_zip(file_name, config):
                                  },
                                  names=['time', 'bg'],
                                  na_values=[' null', '', " "])
-            read_record.add(df)
+                convert_problem_timestamps(df, 'time')
+                read_record.add(df)
+            # except:
+            #     print("Error reading csv for id " + read_record.zip_id)
+            #     # print(e)
 
         return read_record
 
@@ -97,3 +106,52 @@ def is_a_bg_csv_file(config, patient_id, file_path):
     # has right file ending
     endswith = file_path.endswith(config.bg_csv_file_extension)
     return startswith and endswith
+
+
+# deals with non-compatible AM/PM and timezones timestamps so that all times can be converted to pandas timestamps
+# modifies df
+def convert_problem_timestamps(df: pd.DataFrame, column: str):
+    try:
+        # replace tricky timezone strings with easier to translate ones
+        df.replace(' EDT ', ' UTC+4 ', regex=True, inplace=True)
+        df.replace(' EST ', ' UTC+5 ', regex=True, inplace=True)
+        df.replace(' CDT ', ' UTC+5 ', regex=True, inplace=True)
+        df.replace(' vorm.', ' AM', regex=True, inplace=True)  # German AM
+        df.replace(' nachm.', ' PM', regex=True, inplace=True)  # German PM
+
+        # find all the problematic time stamps
+        problem_idx = list(df.index[df[column].str.endswith(' PM') | df[column].str.endswith(' AM')])
+        # group consecutive problem indexes
+        grouped_problem_idx = groupby(enumerate(problem_idx), lambda ix: ix[0] - ix[1])
+        for key, group in grouped_problem_idx:
+            # list of consecutive problems
+            ls = list(map(itemgetter(1), group))
+
+            # find the best entry that has timezone information to use
+            last_idx = ls[-1]
+            first_idx = ls[0]
+            # check that there is an item after the problematic one that has a timezone
+            if last_idx + 1 <= (df.shape[0] - 1):
+                with_tz = df[column].iloc[last_idx + 1]
+                known_tz = pd.to_datetime(with_tz).tz
+            elif first_idx != 0:  # check that there is an item before the problematic on that has a timezone
+                with_tz = df[column].iloc[first_idx - 1]
+                known_tz = pd.to_datetime(with_tz).tz
+            else:
+                raise ValueError('No time zone information found')
+
+            # convert all timestamps in the list using the last_tz timezone and move it to UTC
+            for i in ls:
+                time_string = df[column].iloc[i]
+                #  remove redundant PM from time string with hours > 12
+                if time_string.endswith(' PM') and pd.to_datetime(time_string.replace(' PM', '')).hour > 12:
+                    time_string = time_string.replace(' PM', '')
+                df[column].iat[i] = pd.to_datetime(time_string).tz_localize(known_tz).tz_convert(tz='UTC')
+
+        # convert whole column into utc timestamps
+        df[column] = pd.to_datetime(df[column], utc=True, errors='coerce')  # errors coerce will insert NaT
+
+    except ValueError as e:
+        print(e)
+    except ParserError as e:
+        print(e)
