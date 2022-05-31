@@ -6,21 +6,21 @@ from src.configurations import TestConfiguration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file
 
 config = TestConfiguration()
-test_data_dir = config.data_dir
-# get all zip files in folder
-filepaths = glob.glob(str(test_data_dir) + "/*.zip")
 
 
 def test_reads_bg_from_given_zip_file():
+    test_data_dir = config.data_dir
+    # get all zip files in folder
+    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
     path = filepaths[1]
-    df, id = read_bg_from_zip(path, config)
-    assert_that(df, is_not(empty()))
-    assert_that(Path(path).stem, is_(id))
+    result = read_bg_from_zip(path, config)
+    assert_that(result, is_not(empty()))
+    assert_that(Path(path).stem, is_(result.zip_id))
 
 
 def test_reads_all_peoples_files():
-    dfs = read_all_bg(config)
-    assert_that(len(dfs), is_(145))
+    result = read_all_bg(config)
+    assert_that(len(result), is_(145))
 
 
 def test_is_a_bg_csv_file():
