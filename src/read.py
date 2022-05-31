@@ -74,7 +74,16 @@ def read_bg_from_zip(file_name, config):
 
             # read entries into pandas dataframe
             with archive.open(file, mode="r") as bg_file:
-                df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"), header=None, names=['time', 'bg'])
+                df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
+                                 header=None,
+                                 # parse_dates=[0],
+                                 # date_parser=lambda col: pd.to_datetime(col, utc=True),
+                                 dtype={
+                                     'time': str,
+                                     'bg': pd.Float64Dtype()
+                                 },
+                                 names=['time', 'bg'],
+                                 na_values=[' null', '', " "])
             read_record.add(df)
 
         return read_record
