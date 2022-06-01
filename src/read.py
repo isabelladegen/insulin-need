@@ -7,7 +7,6 @@ from operator import itemgetter
 from pathlib import Path
 import logging
 import pandas as pd
-from pandas.errors import ParserError
 
 from src.configurations import Configuration
 
@@ -56,12 +55,15 @@ def read_all_bg(config: Configuration):
     filepaths = glob.glob(str(data) + "/*.zip")
     read_records = []
     for file in filepaths:
-        # Don't read aps zip just yet
+        # Android read below
         if file.endswith(config.android_aps_zip):
             continue
         read_record = read_bg_from_zip(file, config)
         read_records.append(read_record)
-    return read_records
+
+    # read android data
+    results = read_all_android_aps_bg(config)
+    return read_records + results
 
 
 # reads BGs into df from the entries csv file in the given zip file without extracting the zip
@@ -123,8 +125,8 @@ def read_all_android_aps_bg(config):
     with zipfile.ZipFile(android_file, mode="r") as archive:
         # find high level folders to read data from -> one ReadRecord per high level folder
         all_docs = archive.namelist()
+        all_docs.remove('/')  # ignore root
         files = {item.split('/')[0] for item in all_docs}
-        # files.remove('') -> this is actually a data folder not sure why there's no id?
 
         records = []
         # read BG from each folder
@@ -133,7 +135,7 @@ def read_all_android_aps_bg(config):
             read_record.zip_id = file
             read_record.is_android_upload = True
 
-            # find all files for that zip
+            # find all files for that zip_id
             files_for_zip_id = [doc for doc in all_docs if file in doc]
 
             # find all bg files
@@ -144,6 +146,7 @@ def read_all_android_aps_bg(config):
 
             # read bg files into df
             for bg_file in bg_files:
+                # upload_info = bg_file.replace(config.bg_csv_file_android, config.android_upload_info)
                 with archive.open(bg_file, mode="r") as open_bg_file:
                     df = pd.read_csv(TextIOWrapper(open_bg_file, encoding="utf-8"),
                                      header=None,
@@ -155,7 +158,6 @@ def read_all_android_aps_bg(config):
                                      },
                                      names=['time', 'bg'],
                                      na_values=[' null', '', " "])
-                    # TODO date conversion
                     read_record.add(df)
 
             read_record.calculate_stats()
