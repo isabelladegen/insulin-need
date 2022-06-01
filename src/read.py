@@ -147,6 +147,8 @@ def read_all_android_aps_bg(config):
                 with archive.open(bg_file, mode="r") as open_bg_file:
                     df = pd.read_csv(TextIOWrapper(open_bg_file, encoding="utf-8"),
                                      header=None,
+                                     parse_dates=['time'],
+                                     date_parser=lambda col: pd.to_datetime(col, unit='ms'),
                                      dtype={
                                          'time': str,
                                          'bg': pd.Float64Dtype()
