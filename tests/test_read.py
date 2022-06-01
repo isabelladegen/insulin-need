@@ -1,9 +1,7 @@
 import glob
 from pathlib import Path
 
-import dateutil
 import pandas as pd
-from dateutil.parser import parser
 from hamcrest import *
 from src.configurations import TestConfiguration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps

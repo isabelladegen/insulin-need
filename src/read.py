@@ -19,6 +19,12 @@ class ReadRecord:
     bg_df: pd.DataFrame = None  # dataframe of time and value
     has_no_BG_entries: bool = False  # true if the entries files were empty or non-existent
     number_of_entries_files: int = 0  # number of entries files found
+    number_of_rows: int = 0  # number of rows in total
+    number_of_rows_without_nan: int = 0
+    number_of_rows_with_nan: int = 0
+    is_mg_dl: bool = True  # checks if values are in mg/dl or not
+    earliest_date: str = ''  # oldest date in series
+    newest_date: str = ''  # newest date in series
 
     # helper method to set read records for no bg files
     def zero_bg_files(self):
@@ -29,6 +35,16 @@ class ReadRecord:
             self.bg_df = df
         else:
             self.bg_df = pd.concat([self.bg_df, df])
+
+    def calculate_stats(self):
+        if self.has_no_BG_entries:
+            return
+        self.number_of_rows = self.bg_df.shape[0]
+        self.number_of_rows_without_nan = self.bg_df.dropna().shape[0]
+        self.number_of_rows_with_nan = self.bg_df.shape[0] - self.bg_df.dropna().shape[0]
+        self.is_mg_dl = self.bg_df.bg.mean() > 60
+        self.earliest_date = str(self.bg_df.time.min())
+        self.newest_date = str(self.bg_df.time.max())
 
 
 # reads all BG files from each zip files without extracting the zip
@@ -78,7 +94,6 @@ def read_bg_from_zip(file_name, config):
 
             # read entries into pandas dataframe
             with archive.open(file, mode="r") as bg_file:
-                # try:
                 df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
                                  header=None,
                                  # parse_dates=[0],
@@ -91,10 +106,9 @@ def read_bg_from_zip(file_name, config):
                                  na_values=[' null', '', " "])
                 convert_problem_timestamps(df, 'time')
                 read_record.add(df)
-            # except:
-            #     print("Error reading csv for id " + read_record.zip_id)
-            #     # print(e)
 
+        # calculate some information from the dataframe
+        read_record.calculate_stats()
         return read_record
 
 
@@ -152,6 +166,4 @@ def convert_problem_timestamps(df: pd.DataFrame, column: str):
         df[column] = pd.to_datetime(df[column], utc=True, errors='coerce')  # errors coerce will insert NaT
 
     except ValueError as e:
-        print(e)
-    except ParserError as e:
         print(e)
