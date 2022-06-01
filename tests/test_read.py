@@ -56,4 +56,4 @@ def test_can_read_messed_up_time_stamps():
 
 def test_can_read_android_aps_uploads():
     result = read_all_android_aps_bg(config)
-    assert_that(len(result), is_(38))
+    assert_that(len(result), is_(39))

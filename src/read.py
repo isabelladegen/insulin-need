@@ -25,6 +25,7 @@ class ReadRecord:
     is_mg_dl: bool = True  # checks if values are in mg/dl or not
     earliest_date: str = ''  # oldest date in series
     newest_date: str = ''  # newest date in series
+    is_android_upload: bool = False  # set to True if from android upload, False otherwise
 
     # helper method to set read records for no bg files
     def zero_bg_files(self):
@@ -123,14 +124,39 @@ def read_all_android_aps_bg(config):
         # find high level folders to read data from -> one ReadRecord per high level folder
         all_docs = archive.namelist()
         files = {item.split('/')[0] for item in all_docs}
-        files.remove('')
+        # files.remove('') -> this is actually a data folder not sure why there's no id?
 
         records = []
         # read BG from each folder
         for file in files:
             read_record = ReadRecord()
             read_record.zip_id = file
+            read_record.is_android_upload = True
 
+            # find all files for that zip
+            files_for_zip_id = [doc for doc in all_docs if file in doc]
+
+            # find all bg files
+            bg_files = [doc for doc in files_for_zip_id if doc.endswith(config.bg_csv_file_android)]
+            read_record.number_of_entries_files = len(bg_files)
+            if not bg_files:
+                read_record.has_no_BG_entries = True
+
+            # read bg files into df
+            for bg_file in bg_files:
+                with archive.open(bg_file, mode="r") as open_bg_file:
+                    df = pd.read_csv(TextIOWrapper(open_bg_file, encoding="utf-8"),
+                                     header=None,
+                                     dtype={
+                                         'time': str,
+                                         'bg': pd.Float64Dtype()
+                                     },
+                                     names=['time', 'bg'],
+                                     na_values=[' null', '', " "])
+                    # TODO date conversion
+                    read_record.add(df)
+
+            read_record.calculate_stats()
             records.append(read_record)
     return records
 
