@@ -112,6 +112,29 @@ def read_bg_from_zip(file_name, config):
         return read_record
 
 
+# reads android bg data
+def read_all_android_aps_bg(config):
+    data_dir = config.data_dir
+    android_zip = config.android_aps_zip
+    android_file = Path(data_dir + '/' + android_zip)
+
+    # find files in the zip file
+    with zipfile.ZipFile(android_file, mode="r") as archive:
+        # find high level folders to read data from -> one ReadRecord per high level folder
+        all_docs = archive.namelist()
+        files = {item.split('/')[0] for item in all_docs}
+        files.remove('')
+
+        records = []
+        # read BG from each folder
+        for file in files:
+            read_record = ReadRecord()
+            read_record.zip_id = file
+
+            records.append(read_record)
+    return records
+
+
 # checks if a file from zip namelist is a bg csv file
 def is_a_bg_csv_file(config, patient_id, file_path):
     # file starts with patient id and _entries

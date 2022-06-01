@@ -1,14 +1,17 @@
 import glob
-from pathlib import Path
-
+import os
+import pytest
 import pandas as pd
+from pathlib import Path
 from hamcrest import *
-from src.configurations import TestConfiguration
-from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps
+from src.configurations import TestConfiguration, Configuration
+from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
+    read_all_android_aps_bg
 
 config = TestConfiguration()
 
 
+@pytest.mark.skipif(os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_reads_bg_from_given_zip_file():
     test_data_dir = config.data_dir
     # get all zip files in folder
@@ -19,11 +22,13 @@ def test_reads_bg_from_given_zip_file():
     assert_that(Path(path).stem, is_(result.zip_id))
 
 
+@pytest.mark.skipif(os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_reads_all_peoples_files():
     result = read_all_bg(config)
     assert_that(len(result), is_(145))
 
 
+@pytest.mark.skipif(os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_is_a_bg_csv_file():
     example_name = 'direct-sharing-31/84984656_entries.json_csv/84984656_entries.json.csv'
     assert_that(is_a_bg_csv_file(config, '84984656', example_name), is_(True))
@@ -47,3 +52,8 @@ def test_can_read_messed_up_time_stamps():
     assert_that(str(df.iloc[7, 0]), is_('2016-01-29 17:55:11+00:00'))  # correctly reads CDT
     assert_that(str(df.iloc[8, 0]), is_('2016-10-28 12:17:18.191000+00:00'))
     assert_that(str(df.iloc[9, 0]), is_('2016-10-09 19:39:21+00:00'))
+
+
+def test_can_read_android_aps_uploads():
+    result = read_all_android_aps_bg(config)
+    assert_that(len(result), is_(38))
