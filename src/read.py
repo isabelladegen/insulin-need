@@ -1,3 +1,4 @@
+# reads BG entries into a list of ReadRecords
 import glob
 import zipfile
 from dataclasses import dataclass
