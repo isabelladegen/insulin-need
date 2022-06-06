@@ -9,7 +9,9 @@ def as_flat_dataframe(records: [ReadRecord]):
     result = None
     for record in records:
         # add id column
-        df = record.bg_df
+        if record.bg_df is None:
+            continue
+        df = record.bg_df.copy()
         df.insert(loc=0, column='id', value=record.zip_id)
 
         # concat to resulting df
@@ -17,5 +19,6 @@ def as_flat_dataframe(records: [ReadRecord]):
             result = df
         else:
             result = pd.concat([result, df])
+    # drop nan
+    return result.dropna()
 
-    return result
