@@ -22,3 +22,4 @@ dependencies:
   - scrapy
   - beautifulsoup4
   - sktime
+  - tsfresh

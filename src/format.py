@@ -19,6 +19,9 @@ def as_flat_dataframe(records: [ReadRecord]):
             result = df
         else:
             result = pd.concat([result, df])
-    # drop nan
-    return result.dropna()
 
+    # drop nan
+    result = result.dropna()
+    # reindex from 0 - no of rows
+    result.reset_index(inplace=True, drop=True)
+    return result

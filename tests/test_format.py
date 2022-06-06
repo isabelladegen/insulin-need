@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from hamcrest import *
 
 from src.format import as_flat_dataframe
@@ -26,8 +28,9 @@ def test_adds_zip_id_to_data_frame():
     assert_that(result_df.columns[0], is_('id'))
     assert_that(result_df.columns[1], is_('time'))
     assert_that(result_df.columns[2], is_('bg'))
+    assert_that(result_df.index, has_item(19))  # this is testing reindexing after concatenation
     assert_that(result_df1[['time', 'bg']].equals(df1))
-    assert_that(result_df2[['time', 'bg']].equals(df2))
+    assert_that(result_df2[['time', 'bg']].reset_index(drop=True).equals(df2))
 
 
 def test_skips_records_with_no_bg_data():
@@ -60,4 +63,4 @@ def test_drops_rows_with_nan_value():
     result_df = as_flat_dataframe([test_record1])
 
     # assert resulting dataframe contains both df 1 and df2
-    assert_that(result_df.shape, is_((df1.shape[0] -nans, 3)))
+    assert_that(result_df.shape, is_((df1.shape[0] - nans, 3)))
