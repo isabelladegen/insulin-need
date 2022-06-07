@@ -123,6 +123,26 @@ def read_entries_file_into_df(archive, file, read_record):
         read_record.add(df)
 
 
+# reads device status file into df and adds it to read_record
+def read_device_status_file_into_df(archive, file, read_record):
+    with archive.open(file, mode="r") as bg_file:
+        df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
+                         # header=None,
+                         # parse_dates=[0],
+                         # date_parser=lambda col: pd.to_datetime(col, utc=True),
+                         # dtype={
+                         #     'time': str,
+                         #     'bg': pd.Float64Dtype()
+                         # },
+                         # names=['time', 'bg'],
+                         # na_values=[' null', '', " "]
+                         )
+        time = 'openaps/enacted/deliverAt' # TODO needs to figure out what data to read
+        convert_problem_timestamps(df, time)
+        df.rename(columns={time: 'time'}, errors="raise", inplace=True)
+        read_record.add(df)
+
+
 # reads android bg data
 def read_all_android_aps_bg(config):
     data_dir = config.data_dir
@@ -183,9 +203,19 @@ def is_a_bg_csv_file(config, patient_id, file_path):
     return startswith and endswith
 
 
-# reads a devicestatus file
-def read_devicestatus_from_zip(file, config):
-    pass
+# checks if a file from zip namelist is a bg csv file
+def is_a_device_status_csv_file(config, patient_id, file_path):
+    # file starts with patient id and _entries
+    startswith = Path(file_path).name.startswith(patient_id + config.device_status_csv_file_start)
+
+    # has right file ending
+    endswith = file_path.endswith(config.device_status_csv_file_extension)
+    return startswith and endswith
+
+
+# reads a device status file
+def read_device_status_from_zip(file, config):
+    return read_zip_file(config, file, is_a_device_status_csv_file, read_device_status_file_into_df)
 
 
 # deals with non-compatible AM/PM and timezones timestamps so that all times can be converted to pandas timestamps

@@ -6,7 +6,7 @@ from pathlib import Path
 from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
-    read_all_android_aps_bg, read_devicestatus_from_zip
+    read_all_android_aps_bg, read_device_status_from_zip, is_a_device_status_csv_file
 
 config = TestConfiguration()
 
@@ -33,6 +33,12 @@ def test_reads_all_peoples_files():
 def test_is_a_bg_csv_file():
     example_name = 'direct-sharing-31/84984656_entries.json_csv/84984656_entries.json.csv'
     assert_that(is_a_bg_csv_file(config, '84984656', example_name), is_(True))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_is_a_device_status_csv_file():
+    example_name = "direct-sharing-31/99908129_devicestatus__to_2018-02-02_csv/99908129_devicestatus__to_2018-02-02_aa.csv"
+    assert_that(is_a_device_status_csv_file(config, '99908129', example_name), is_(True))
 
 
 def test_can_read_messed_up_time_stamps():
@@ -62,11 +68,12 @@ def test_can_read_android_aps_uploads():
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
-def test_reads_devicestatus_from_given_zip_file():
+def test_reads_device_status_from_given_zip_file():
     test_data_dir = config.data_dir
     # get all zip files in folder
     filepaths = glob.glob(str(test_data_dir) + "/*.zip")
     test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
-    result = read_devicestatus_from_zip(test_file, config)
+    result = read_device_status_from_zip(test_file, config)
     assert_that(result, is_not(empty()))
     assert_that(Path(test_file).stem, is_(result.zip_id))
+    assert_that(result.df.shape[0], greater_than(100))
