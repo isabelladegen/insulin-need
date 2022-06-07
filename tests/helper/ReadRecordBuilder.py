@@ -13,7 +13,7 @@ class ReadRecordBuilder:
     def build(self):
         record = ReadRecord()
         record.zip_id = self.id
-        record.bg_df = self.df
+        record.df = self.df
         return record
 
     def with_id(self, id: str):

@@ -16,36 +16,34 @@ from src.configurations import Configuration
 @dataclass
 class ReadRecord:
     zip_id: str = None  # patient id
-    bg_df: pd.DataFrame = None  # dataframe of time and value
-    has_no_BG_entries: bool = False  # true if the entries files were empty or non-existent
+    df: pd.DataFrame = None  # dataframe
+    has_no_files: bool = False  # true if the specified file to read was empty or did not exist
     number_of_entries_files: int = 0  # number of entries files found
     number_of_rows: int = 0  # number of rows in total
     number_of_rows_without_nan: int = 0
     number_of_rows_with_nan: int = 0
-    is_mg_dl: bool = True  # checks if values are in mg/dl or not
     earliest_date: str = ''  # oldest date in series
     newest_date: str = ''  # newest date in series
     is_android_upload: bool = False  # set to True if from android upload, False otherwise
 
     # helper method to set read records for no bg files
-    def zero_bg_files(self):
-        self.has_no_BG_entries = True
+    def zero_files(self):
+        self.has_no_files = True
 
     def add(self, df):
-        if self.bg_df is None:
-            self.bg_df = df
+        if self.df is None:
+            self.df = df
         else:
-            self.bg_df = pd.concat([self.bg_df, df])
+            self.df = pd.concat([self.df, df])
 
     def calculate_stats(self):
-        if self.has_no_BG_entries:
+        if self.has_no_files:
             return
-        self.number_of_rows = self.bg_df.shape[0]
-        self.number_of_rows_without_nan = self.bg_df.dropna().shape[0]
-        self.number_of_rows_with_nan = self.bg_df.shape[0] - self.bg_df.dropna().shape[0]
-        self.is_mg_dl = self.bg_df.bg.mean() > 60
-        self.earliest_date = str(self.bg_df.time.min())
-        self.newest_date = str(self.bg_df.time.max())
+        self.number_of_rows = self.df.shape[0]
+        self.number_of_rows_without_nan = self.df.dropna().shape[0]
+        self.number_of_rows_with_nan = self.df.shape[0] - self.df.dropna().shape[0]
+        self.earliest_date = str(self.df.time.min())
+        self.newest_date = str(self.df.time.max())
 
 
 # reads all BG files from each zip files without extracting the zip
@@ -87,7 +85,7 @@ def read_zip_file(config, file_name, file_check_function, read_file_into_df_func
         number_of_files = len(files_to_read)
         # stop reading if there are no files
         if number_of_files == 0:
-            read_record.zero_bg_files()
+            read_record.zero_files()
             return read_record
         read_record.number_of_entries_files = number_of_files
 
@@ -152,7 +150,7 @@ def read_all_android_aps_bg(config):
             bg_files = [doc for doc in files_for_zip_id if doc.endswith(config.bg_csv_file_android)]
             read_record.number_of_entries_files = len(bg_files)
             if not bg_files:
-                read_record.has_no_BG_entries = True
+                read_record.has_no_files = True
 
             # read bg files into df
             for bg_file in bg_files:

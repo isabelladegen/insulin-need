@@ -20,7 +20,7 @@ def test_reads_bg_from_given_zip_file():
     result = read_bg_from_zip(path, config)
     assert_that(result, is_not(empty()))
     assert_that(Path(path).stem, is_(result.zip_id))
-    assert_that(result.bg_df.shape[0], greater_than(10))
+    assert_that(result.df.shape[0], greater_than(10))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")

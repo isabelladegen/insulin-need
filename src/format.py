@@ -9,9 +9,9 @@ def as_flat_dataframe(records: [ReadRecord]):
     result = None
     for record in records:
         # add id column
-        if record.bg_df is None:
+        if record.df is None:
             continue
-        df = record.bg_df.copy()
+        df = record.df.copy()
         df.insert(loc=0, column='id', value=record.zip_id)
 
         # concat to resulting df
