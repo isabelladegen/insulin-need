@@ -6,7 +6,7 @@ from pathlib import Path
 from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
-    read_all_android_aps_bg
+    read_all_android_aps_bg, read_devicestatus_from_zip
 
 config = TestConfiguration()
 
@@ -20,6 +20,7 @@ def test_reads_bg_from_given_zip_file():
     result = read_bg_from_zip(path, config)
     assert_that(result, is_not(empty()))
     assert_that(Path(path).stem, is_(result.zip_id))
+    assert_that(result.bg_df.shape[0], greater_than(10))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
@@ -60,3 +61,12 @@ def test_can_read_android_aps_uploads():
     assert_that(len(result), is_(39))
 
 
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_reads_devicestatus_from_given_zip_file():
+    test_data_dir = config.data_dir
+    # get all zip files in folder
+    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
+    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
+    result = read_devicestatus_from_zip(test_file, config)
+    assert_that(result, is_not(empty()))
+    assert_that(Path(test_file).stem, is_(result.zip_id))

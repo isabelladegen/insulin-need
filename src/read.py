@@ -69,51 +69,60 @@ def read_all_bg(config: Configuration):
 
 # reads BGs into df from the entries csv file in the given zip file without extracting the zip
 def read_bg_from_zip(file_name, config):
+    return read_zip_file(config, file_name, is_a_bg_csv_file, read_entries_file_into_df)
+
+
+# generic zip file read method
+def read_zip_file(config, file_name, file_check_function, read_file_into_df_function):
     read_record = ReadRecord()
     read_record.zip_id = Path(file_name).stem
-
     # find bg files in the zip file
     with zipfile.ZipFile(file_name, mode="r") as archive:
         files_and_folders = archive.namelist()
 
-        # finds all the .csv files that contain BG readings in the zip
-        bg_entries_files = [x for x in files_and_folders if is_a_bg_csv_file(config, read_record.zip_id, x)]
+        # finds all the .csv files that match the file check function
+        files_to_read = [x for x in files_and_folders if file_check_function(config, read_record.zip_id, x)]
 
-        # check number of bg entries files
-        number_of_bg_entries_files = len(bg_entries_files)
-        # stop reading if there are no entries files for BG
-        if number_of_bg_entries_files == 0:
+        # check number of files
+        number_of_files = len(files_to_read)
+        # stop reading if there are no files
+        if number_of_files == 0:
             read_record.zero_bg_files()
             return read_record
-        read_record.number_of_entries_files = number_of_bg_entries_files
+        read_record.number_of_entries_files = number_of_files
 
         # read all the entries files into dataframes
-        for file in bg_entries_files:
+        for file in files_to_read:
             info = archive.getinfo(file)
 
             # skip files that are zero size, but log them
             if info.file_size == 0:
-                logging.info('Found empty entries file: ' + file + ' for id: ' + read_record.zip_id)
+                logging.info('Found empty file: ' + file + ' for id: ' + read_record.zip_id)
                 continue
 
             # read entries into pandas dataframe
-            with archive.open(file, mode="r") as bg_file:
-                df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
-                                 header=None,
-                                 # parse_dates=[0],
-                                 # date_parser=lambda col: pd.to_datetime(col, utc=True),
-                                 dtype={
-                                     'time': str,
-                                     'bg': pd.Float64Dtype()
-                                 },
-                                 names=['time', 'bg'],
-                                 na_values=[' null', '', " "])
-                convert_problem_timestamps(df, 'time')
-                read_record.add(df)
+            read_file_into_df_function(archive, file, read_record)
 
         # calculate some information from the dataframe
         read_record.calculate_stats()
         return read_record
+
+
+# reads BG data from entries file into df and adds it to read_record
+def read_entries_file_into_df(archive, file, read_record):
+    with archive.open(file, mode="r") as bg_file:
+        df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
+                         header=None,
+                         # parse_dates=[0],
+                         # date_parser=lambda col: pd.to_datetime(col, utc=True),
+                         dtype={
+                             'time': str,
+                             'bg': pd.Float64Dtype()
+                         },
+                         names=['time', 'bg'],
+                         na_values=[' null', '', " "])
+        convert_problem_timestamps(df, 'time')
+        read_record.add(df)
 
 
 # reads android bg data
@@ -174,6 +183,11 @@ def is_a_bg_csv_file(config, patient_id, file_path):
     # has right file ending
     endswith = file_path.endswith(config.bg_csv_file_extension)
     return startswith and endswith
+
+
+# reads a devicestatus file
+def read_devicestatus_from_zip(file, config):
+    pass
 
 
 # deals with non-compatible AM/PM and timezones timestamps so that all times can be converted to pandas timestamps
