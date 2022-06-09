@@ -23,7 +23,7 @@ def test_reads_bg_from_given_zip_file():
     assert_that(result.df.shape[0], greater_than(10))
 
 
-@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+@pytest.mark.skip(reason="takes a long time")
 def test_reads_all_peoples_files():
     result = read_all_bg(config)
     assert_that(len(result), is_(145))
@@ -77,3 +77,17 @@ def test_reads_device_status_from_given_zip_file():
     assert_that(result, is_not(empty()))
     assert_that(Path(test_file).stem, is_(result.zip_id))
     assert_that(result.df.shape[0], greater_than(100))
+    assert_that(result.df.shape[1], equal_to(559))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_reads_specific_columns_from_device_status_from_given_zip_file():
+    test_data_dir = config.data_dir
+    # get all zip files in folder
+    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
+    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
+    result = read_device_status_from_zip(test_file, config, selected=True)
+    assert_that(result, is_not(empty()))
+    assert_that(Path(test_file).stem, is_(result.zip_id))
+    assert_that(result.df.shape[0], greater_than(100))
+    assert_that(result.df.shape[1], equal_to(25))

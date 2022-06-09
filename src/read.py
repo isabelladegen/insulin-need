@@ -71,7 +71,7 @@ def read_bg_from_zip(file_name, config):
 
 
 # generic zip file read method
-def read_zip_file(config, file_name, file_check_function, read_file_into_df_function):
+def read_zip_file(config, file_name, file_check_function, read_file_into_df_function, selected=False):
     read_record = ReadRecord()
     read_record.zip_id = Path(file_name).stem
     # find bg files in the zip file
@@ -99,7 +99,7 @@ def read_zip_file(config, file_name, file_check_function, read_file_into_df_func
                 continue
 
             # read entries into pandas dataframe
-            read_file_into_df_function(archive, file, read_record)
+            read_file_into_df_function(archive, file, read_record, selected)
 
         # calculate some information from the dataframe
         read_record.calculate_stats()
@@ -107,7 +107,7 @@ def read_zip_file(config, file_name, file_check_function, read_file_into_df_func
 
 
 # reads BG data from entries file into df and adds it to read_record
-def read_entries_file_into_df(archive, file, read_record):
+def read_entries_file_into_df(archive, file, read_record, selected=False):
     with archive.open(file, mode="r") as bg_file:
         df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
                          header=None,
@@ -124,23 +124,76 @@ def read_entries_file_into_df(archive, file, read_record):
 
 
 # reads device status file into df and adds it to read_record
-def read_device_status_file_into_df(archive, file, read_record):
+# if selected it reads all columns, otherwise only the ones deemed to be most interesting
+def read_device_status_file_into_df(archive, file, read_record, selected=False):
     with archive.open(file, mode="r") as bg_file:
-        df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
-                         # header=None,
-                         # parse_dates=[0],
-                         # date_parser=lambda col: pd.to_datetime(col, utc=True),
-                         # dtype={
-                         #     'time': str,
-                         #     'bg': pd.Float64Dtype()
-                         # },
-                         # names=['time', 'bg'],
-                         # na_values=[' null', '', " "]
-                         )
-        time = 'openaps/enacted/deliverAt' # TODO needs to figure out what data to read
+        io_wrapper = TextIOWrapper(bg_file, encoding="utf-8")
+        cols = [
+            'created_at',
+            'device',  # TODO move to config file
+            'pump/clock',
+            'pump/status/timestamp',
+            'pump/status/suspended',
+            'pump/status/status',
+            'pump/status/bolusing',
+            'openaps/enacted/deliverAt',
+            'openaps/enacted/timestamp',
+            'openaps/enacted/rate',
+            'openaps/enacted/insulinReq',
+            'openaps/enacted/eventualBG',
+            'openaps/enacted/sensitivityRatio',
+            'openaps/enacted/COB',
+            'openaps/enacted/IOB',
+            'openaps/enacted/bg',
+            'openaps/enacted/reason',
+            'openaps/enacted/duration',
+            'openaps/enacted/minPredBG',
+            'openaps/enacted/units',
+            'openaps/iob/bolusinsulin',
+            'openaps/iob/microBolusInsulin',
+            'openaps/iob/lastBolusTime',
+            'openaps/iob/timestamp',
+            'openaps/iob/lastTemp/rate'
+        ]
+        if selected:
+            df = pd.read_csv(io_wrapper,
+                             usecols=lambda c: c in set(cols)
+                             # header=None,
+                             # parse_dates=[0],
+                             # date_parser=lambda col: pd.to_datetime(col, utc=True),
+                             # dtype={
+                             #     'time': str,
+                             #     'bg': pd.Float64Dtype()
+                             # },
+                             # names=['time', 'bg'],
+                             # na_values=[' null', '', " "]
+                             )
+        else:
+            df = pd.read_csv(io_wrapper)
+        time = 'created_at'  # TODO needs to figure out what data to read
         convert_problem_timestamps(df, time)
         df.rename(columns={time: 'time'}, errors="raise", inplace=True)
         read_record.add(df)
+
+
+def read_specific_device_status_columns(bg_file):
+    df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
+                     # header=None,
+                     # parse_dates=[0],
+                     # date_parser=lambda col: pd.to_datetime(col, utc=True),
+                     # dtype={
+                     #     'time': str,
+                     #     'bg': pd.Float64Dtype()
+                     # },
+                     # names=['time', 'bg'],
+                     # na_values=[' null', '', " "]
+                     )
+    return df
+
+
+def read_all_columns(bg_file):
+    df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"))
+    return df
 
 
 # reads android bg data
@@ -214,8 +267,8 @@ def is_a_device_status_csv_file(config, patient_id, file_path):
 
 
 # reads a device status file
-def read_device_status_from_zip(file, config):
-    return read_zip_file(config, file, is_a_device_status_csv_file, read_device_status_file_into_df)
+def read_device_status_from_zip(file, config, selected=False):
+    return read_zip_file(config, file, is_a_device_status_csv_file, read_device_status_file_into_df, selected)
 
 
 # deals with non-compatible AM/PM and timezones timestamps so that all times can be converted to pandas timestamps
