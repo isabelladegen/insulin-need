@@ -48,8 +48,22 @@ class ReadRecord:
 
 # reads all BG files from each zip files without extracting the zip
 def read_all_bg(config: Configuration):
-    data = config.data_dir
+    read_records = read_all(config, read_bg_from_zip)
 
+    # read android data
+    results = read_all_android_aps_bg(config)
+    return read_records + results
+
+
+# reads all device status files into a list of read records
+def read_all_device_status(config):
+    read_records = read_all(config, read_device_status_from_zip)
+    return read_records
+
+
+# reads all files using function
+def read_all(config, function):
+    data = config.data_dir
     # get all zip files in folder
     filepaths = glob.glob(str(data) + "/*.zip")
     read_records = []
@@ -57,12 +71,9 @@ def read_all_bg(config: Configuration):
         # Android read below
         if file.endswith(config.android_aps_zip):
             continue
-        read_record = read_bg_from_zip(file, config)
+        read_record = function(file, config)
         read_records.append(read_record)
-
-    # read android data
-    results = read_all_android_aps_bg(config)
-    return read_records + results
+    return read_records
 
 
 # reads BGs into df from the entries csv file in the given zip file without extracting the zip
@@ -71,7 +82,7 @@ def read_bg_from_zip(file_name, config):
 
 
 # generic zip file read method
-def read_zip_file(config, file_name, file_check_function, read_file_into_df_function, selected=False):
+def read_zip_file(config, file_name, file_check_function, read_file_into_df_function):
     read_record = ReadRecord()
     read_record.zip_id = Path(file_name).stem
     # find bg files in the zip file
@@ -99,15 +110,15 @@ def read_zip_file(config, file_name, file_check_function, read_file_into_df_func
                 continue
 
             # read entries into pandas dataframe
-            read_file_into_df_function(archive, file, read_record, selected)
+            read_file_into_df_function(archive, file, read_record, config)
 
         # calculate some information from the dataframe
         read_record.calculate_stats()
         return read_record
 
 
-# reads BG data from entries file into df and adds it to read_record
-def read_entries_file_into_df(archive, file, read_record, selected=False):
+# reads BG data from entries file into df and adds it to read_record, config is there for consistency
+def read_entries_file_into_df(archive, file, read_record, config):
     with archive.open(file, mode="r") as bg_file:
         df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
                          header=None,
@@ -124,38 +135,21 @@ def read_entries_file_into_df(archive, file, read_record, selected=False):
 
 
 # reads device status file into df and adds it to read_record
-# if selected it reads all columns, otherwise only the ones deemed to be most interesting
-def read_device_status_file_into_df(archive, file, read_record, selected=False):
-    with archive.open(file, mode="r") as bg_file:
-        io_wrapper = TextIOWrapper(bg_file, encoding="utf-8")
-        cols = [
-            'created_at',
-            'device',  # TODO move to config file
-            'pump/clock',
-            'pump/status/timestamp',
-            'pump/status/suspended',
-            'pump/status/status',
-            'pump/status/bolusing',
-            'openaps/enacted/deliverAt',
-            'openaps/enacted/timestamp',
-            'openaps/enacted/rate',
-            'openaps/enacted/insulinReq',
-            'openaps/enacted/eventualBG',
-            'openaps/enacted/sensitivityRatio',
-            'openaps/enacted/COB',
-            'openaps/enacted/IOB',
-            'openaps/enacted/bg',
-            'openaps/enacted/reason',
-            'openaps/enacted/duration',
-            'openaps/enacted/minPredBG',
-            'openaps/enacted/units',
-            'openaps/iob/bolusinsulin',
-            'openaps/iob/microBolusInsulin',
-            'openaps/iob/lastBolusTime',
-            'openaps/iob/timestamp',
-            'openaps/iob/lastTemp/rate'
-        ]
-        if selected:
+def read_device_status_file_into_df(archive, file, read_record, config):
+    with archive.open(file, mode="r") as header_context:
+        header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
+        cols = config.device_status_columns
+        missing_headers = [ele for ele in cols if ele not in list(header.columns)]
+        if missing_headers:
+            print("Missing headers in file" + str(file))
+            print(missing_headers)
+            print("")
+    with archive.open(file, mode="r") as file_context:
+        io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
+        cols = config.device_status_columns
+        # only read files when looping
+        # if 'openaps/enacted/deliverAt' in header.columns:
+        if cols:  # if cols is not None read only the columns as specified in the config file
             df = pd.read_csv(io_wrapper,
                              usecols=lambda c: c in set(cols)
                              # header=None,
@@ -170,30 +164,19 @@ def read_device_status_file_into_df(archive, file, read_record, selected=False):
                              )
         else:
             df = pd.read_csv(io_wrapper)
-        time = 'created_at'  # TODO needs to figure out what data to read
-        convert_problem_timestamps(df, time)
+        time = 'created_at'
+        df[time] = pd.to_datetime(df[time])  # time hear is created_at
+        df['pump/status/timestamp'] = pd.to_datetime(df['pump/status/timestamp'])
+        df['openaps/enacted/deliverAt'] = pd.to_datetime(df['openaps/enacted/deliverAt'])
+        df['openaps/enacted/timestamp'] = pd.to_datetime(df['openaps/enacted/timestamp'])
+        df['openaps/iob/lastBolusTime'] = pd.to_datetime(df['openaps/iob/lastBolusTime'], unit='ms')
+        df['openaps/iob/timestamp'] = pd.to_datetime(df['openaps/iob/timestamp'])
+        # convert_problem_timestamps(df, time)
         df.rename(columns={time: 'time'}, errors="raise", inplace=True)
         read_record.add(df)
-
-
-def read_specific_device_status_columns(bg_file):
-    df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"),
-                     # header=None,
-                     # parse_dates=[0],
-                     # date_parser=lambda col: pd.to_datetime(col, utc=True),
-                     # dtype={
-                     #     'time': str,
-                     #     'bg': pd.Float64Dtype()
-                     # },
-                     # names=['time', 'bg'],
-                     # na_values=[' null', '', " "]
-                     )
-    return df
-
-
-def read_all_columns(bg_file):
-    df = pd.read_csv(TextIOWrapper(bg_file, encoding="utf-8"))
-    return df
+        # not looping
+        # else:
+        #     print(file)
 
 
 # reads android bg data
@@ -267,8 +250,8 @@ def is_a_device_status_csv_file(config, patient_id, file_path):
 
 
 # reads a device status file
-def read_device_status_from_zip(file, config, selected=False):
-    return read_zip_file(config, file, is_a_device_status_csv_file, read_device_status_file_into_df, selected)
+def read_device_status_from_zip(file, config):
+    return read_zip_file(config, file, is_a_device_status_csv_file, read_device_status_file_into_df)
 
 
 # deals with non-compatible AM/PM and timezones timestamps so that all times can be converted to pandas timestamps

@@ -6,7 +6,7 @@ from pathlib import Path
 from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
-    read_all_android_aps_bg, read_device_status_from_zip, is_a_device_status_csv_file
+    read_all_android_aps_bg, read_device_status_from_zip, is_a_device_status_csv_file, read_all_device_status
 
 config = TestConfiguration()
 
@@ -64,11 +64,27 @@ def test_can_read_messed_up_time_stamps():
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_can_read_android_aps_uploads():
     result = read_all_android_aps_bg(config)
-    assert_that(len(result), is_(39))
+    assert_that(len(result), is_(38))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_reads_device_status_from_given_zip_file():
+    configuration = TestConfiguration()
+    configuration.device_status_columns = None  # test a config where all columns are read
+    test_data_dir = config.data_dir
+    # get all zip files in folder
+    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
+    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
+
+    result = read_device_status_from_zip(test_file, configuration)
+    assert_that(result, is_not(empty()))
+    assert_that(Path(test_file).stem, is_(result.zip_id))
+    assert_that(result.df.shape[0], greater_than(100))
+    assert_that(result.df.shape[1], equal_to(559))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_reads_only_columns_in_config_from_device_status_from_given_zip_file():
     test_data_dir = config.data_dir
     # get all zip files in folder
     filepaths = glob.glob(str(test_data_dir) + "/*.zip")
@@ -77,17 +93,10 @@ def test_reads_device_status_from_given_zip_file():
     assert_that(result, is_not(empty()))
     assert_that(Path(test_file).stem, is_(result.zip_id))
     assert_that(result.df.shape[0], greater_than(100))
-    assert_that(result.df.shape[1], equal_to(559))
-
-
-@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
-def test_reads_specific_columns_from_device_status_from_given_zip_file():
-    test_data_dir = config.data_dir
-    # get all zip files in folder
-    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
-    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
-    result = read_device_status_from_zip(test_file, config, selected=True)
-    assert_that(result, is_not(empty()))
-    assert_that(Path(test_file).stem, is_(result.zip_id))
-    assert_that(result.df.shape[0], greater_than(100))
     assert_that(result.df.shape[1], equal_to(25))
+
+
+@pytest.mark.skip(reason="takes a real long time reading all data")
+def test_reads_all_device_status_files():
+    result = read_all_device_status(config)
+    assert_that(len(result), is_(145))
