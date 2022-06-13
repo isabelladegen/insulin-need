@@ -39,6 +39,8 @@ class ReadRecord:
     def calculate_stats(self):
         if self.has_no_files:
             return
+        if self.df is None:
+            return
         self.number_of_rows = self.df.shape[0]
         self.number_of_rows_without_nan = self.df.dropna().shape[0]
         self.number_of_rows_with_nan = self.df.shape[0] - self.df.dropna().shape[0]
@@ -57,9 +59,7 @@ def read_all_bg(config: Configuration):
 
 # reads all device status files into a list of read records
 def read_all_device_status(config):
-    read_records = read_all(config, read_device_status_from_zip)
-    return read_records
-
+    return read_all(config, read_device_status_from_zip)
 
 # reads all files using function
 def read_all(config, function):
@@ -136,14 +136,18 @@ def read_entries_file_into_df(archive, file, read_record, config):
 
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
+    # analyze headers and skip any file that's not data during closed looping or that's from the loop
     with archive.open(file, mode="r") as header_context:
         header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
         cols = config.device_status_columns
-        missing_headers = [ele for ele in cols if ele not in list(header.columns)]
+        actual_headers = header.columns
+        missing_headers = [ele for ele in cols if ele not in list(actual_headers)]
         if missing_headers:
-            print("Missing headers in file" + str(file))
-            print(missing_headers)
-            print("")
+            if not any("enacted" in h for h in actual_headers):
+                return  # this is not a device status file from a looping period
+
+            if not any("openaps" in h for h in actual_headers):
+                return  # this is likely a loop file and won't have bolus information in the file, skip for now
     with archive.open(file, mode="r") as file_context:
         io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
         cols = config.device_status_columns
