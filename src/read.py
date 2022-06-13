@@ -166,17 +166,24 @@ def read_device_status_file_into_df(archive, file, read_record, config):
             df = pd.read_csv(io_wrapper)
         time = 'created_at'
         df[time] = pd.to_datetime(df[time])  # time hear is created_at
-        df['pump/status/timestamp'] = pd.to_datetime(df['pump/status/timestamp'])
-        df['openaps/enacted/deliverAt'] = pd.to_datetime(df['openaps/enacted/deliverAt'])
-        df['openaps/enacted/timestamp'] = pd.to_datetime(df['openaps/enacted/timestamp'])
-        df['openaps/iob/lastBolusTime'] = pd.to_datetime(df['openaps/iob/lastBolusTime'], unit='ms')
-        df['openaps/iob/timestamp'] = pd.to_datetime(df['openaps/iob/timestamp'])
-        # convert_problem_timestamps(df, time)
+        to_datetime_if_exists(df, 'pump/status/timestamp')
+        to_datetime_if_exists(df, 'openaps/enacted/deliverAt')
+        to_datetime_if_exists(df, 'openaps/enacted/timestamp')
+        to_datetime_if_exists(df, 'openaps/iob/timestamp')
+        to_datetime_if_exists(df, 'openaps/iob/lastBolusTime')
         df.rename(columns={time: 'time'}, errors="raise", inplace=True)
         read_record.add(df)
         # not looping
         # else:
         #     print(file)
+
+
+def to_datetime_if_exists(df, column, unit=None):
+    if column in df.columns:
+        if unit is not None:
+            df[column] = pd.to_datetime(df[column], unit=unit, errors='coerce')
+        else:
+            df[column] = pd.to_datetime(df[column], errors='coerce')
 
 
 # reads android bg data
