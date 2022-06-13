@@ -61,6 +61,7 @@ def read_all_bg(config: Configuration):
 def read_all_device_status(config):
     return read_all(config, read_device_status_from_zip)
 
+
 # reads all files using function
 def read_all(config, function):
     data = config.data_dir
@@ -136,26 +137,27 @@ def read_entries_file_into_df(archive, file, read_record, config):
 
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
-    # analyze headers and skip any file that's not data during closed looping or that's from the loop
-    with archive.open(file, mode="r") as header_context:
-        header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
-        cols = config.device_status_columns
-        actual_headers = header.columns
-        missing_headers = [ele for ele in cols if ele not in list(actual_headers)]
-        if missing_headers:
-            if not any("enacted" in h for h in actual_headers):
-                return  # this is not a device status file from a looping period
+    columns_to_read = config.device_status_columns
+    if columns_to_read:  # only analyse headers if we're reading specific columns
+        # analyze headers and skip any file that's not data during closed looping or that's from the loop
+        with archive.open(file, mode="r") as header_context:
+            header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
+            actual_headers = header.columns
+            missing_headers = [ele for ele in columns_to_read if ele not in list(actual_headers)]
+            if missing_headers:
+                if not any("enacted" in h for h in actual_headers):
+                    return  # this is not a device status file from a looping period
 
-            if not any("openaps" in h for h in actual_headers):
-                return  # this is likely a loop file and won't have bolus information in the file, skip for now
+                if not any("openaps" in h for h in actual_headers):
+                    return  # this is likely a loop file and won't have bolus information in the file, skip for now
     with archive.open(file, mode="r") as file_context:
         io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
-        cols = config.device_status_columns
+        columns_to_read = config.device_status_columns
         # only read files when looping
         # if 'openaps/enacted/deliverAt' in header.columns:
-        if cols:  # if cols is not None read only the columns as specified in the config file
+        if columns_to_read:  # if cols is not None read only the columns as specified in the config file
             df = pd.read_csv(io_wrapper,
-                             usecols=lambda c: c in set(cols)
+                             usecols=lambda c: c in set(columns_to_read)
                              # header=None,
                              # parse_dates=[0],
                              # date_parser=lambda col: pd.to_datetime(col, utc=True),

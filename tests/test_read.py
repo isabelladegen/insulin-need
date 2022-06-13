@@ -96,7 +96,7 @@ def test_reads_only_columns_in_config_from_device_status_from_given_zip_file():
     assert_that(result.df.shape[1], equal_to(25))
 
 
-# @pytest.mark.skip(reason="takes a real long time reading all data")
+@pytest.mark.skip(reason="takes a real long time reading all data")
 def test_reads_all_device_status_files():
     result = read_all_device_status(config)
     assert_that(len(result), is_(145))
