@@ -5,7 +5,7 @@ from src.read import ReadRecord
 
 
 # takes a list of ReadRecords and creates one flat dataframe adding zip_id as id column
-def as_flat_dataframe(records: [ReadRecord]):
+def as_flat_dataframe(records: [ReadRecord], drop_na: bool = False):
     result = None
     for record in records:
         # add id column
@@ -21,7 +21,8 @@ def as_flat_dataframe(records: [ReadRecord]):
             result = pd.concat([result, df])
 
     # drop nan
-    result = result.dropna()
+    if drop_na:
+        result = result.dropna()
     # reindex from 0 - no of rows
     result.reset_index(inplace=True, drop=True)
     return result

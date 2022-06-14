@@ -60,7 +60,7 @@ def test_drops_rows_with_nan_value():
     test_record1 = ReadRecordBuilder().with_id(zip_id1).with_df(df1).build()
 
     # transform ReadRecords
-    result_df = as_flat_dataframe([test_record1])
+    result_df = as_flat_dataframe([test_record1], True)
 
     # assert resulting dataframe contains both df 1 and df2
     assert_that(result_df.shape, is_((df1.shape[0] - nans, 3)))

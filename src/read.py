@@ -53,7 +53,7 @@ def read_all_bg(config: Configuration):
     read_records = read_all(config, read_bg_from_zip)
 
     # read android data
-    results = read_all_android_aps_bg(config)
+    results = read_all_android_aps_files(config)
     return read_records + results
 
 
@@ -137,8 +137,10 @@ def read_entries_file_into_df(archive, file, read_record, config):
 
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
-    columns_to_read = config.device_status_columns
-    if columns_to_read:  # only analyse headers if we're reading specific columns
+    specific_cols_dic = config.device_status_col_type
+    columns_to_read = None
+    if specific_cols_dic:  # only analyse headers if we're reading specific columns
+        columns_to_read = specific_cols_dic.keys()
         # analyze headers and skip any file that's not data during closed looping or that's from the loop
         with archive.open(file, mode="r") as header_context:
             header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
@@ -152,21 +154,12 @@ def read_device_status_file_into_df(archive, file, read_record, config):
                     return  # this is likely a loop file and won't have bolus information in the file, skip for now
     with archive.open(file, mode="r") as file_context:
         io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
-        columns_to_read = config.device_status_columns
         # only read files when looping
         # if 'openaps/enacted/deliverAt' in header.columns:
         if columns_to_read:  # if cols is not None read only the columns as specified in the config file
             df = pd.read_csv(io_wrapper,
-                             usecols=lambda c: c in set(columns_to_read)
-                             # header=None,
-                             # parse_dates=[0],
-                             # date_parser=lambda col: pd.to_datetime(col, utc=True),
-                             # dtype={
-                             #     'time': str,
-                             #     'bg': pd.Float64Dtype()
-                             # },
-                             # names=['time', 'bg'],
-                             # na_values=[' null', '', " "]
+                             usecols=lambda c: c in set(columns_to_read),
+                             dtype=specific_cols_dic,
                              )
         else:
             df = pd.read_csv(io_wrapper)
@@ -179,9 +172,6 @@ def read_device_status_file_into_df(archive, file, read_record, config):
         to_datetime_if_exists(df, 'openaps/iob/lastBolusTime')
         df.rename(columns={time: 'time'}, errors="raise", inplace=True)
         read_record.add(df)
-        # not looping
-        # else:
-        #     print(file)
 
 
 def to_datetime_if_exists(df, column, unit=None):
@@ -193,7 +183,7 @@ def to_datetime_if_exists(df, column, unit=None):
 
 
 # reads android bg data
-def read_all_android_aps_bg(config):
+def read_all_android_aps_files(config):
     data_dir = config.data_dir
     android_zip = config.android_aps_zip
     android_file = Path(data_dir + '/' + android_zip)
