@@ -48,6 +48,13 @@ class ReadRecord:
         self.newest_date = str(self.df.time.max())
 
 
+# reads flat device data csv and does preprocessing
+def read_flat_device_status_file(config: Configuration):
+    df = pd.read_csv(Path(config.flat_device_status_116_file), dtype=config.device_status_col_type, index_col=0)
+    convert_all_device_status_time_columns(df)
+    return df
+
+
 # reads all BG files from each zip files without extracting the zip
 def read_all_bg(config: Configuration):
     read_records = read_all(config, read_bg_from_zip)
@@ -164,14 +171,18 @@ def read_device_status_file_into_df(archive, file, read_record, config):
         else:
             df = pd.read_csv(io_wrapper)
         time = 'created_at'
-        df[time] = pd.to_datetime(df[time])  # time hear is created_at
-        to_datetime_if_exists(df, 'pump/status/timestamp')
-        to_datetime_if_exists(df, 'openaps/enacted/deliverAt')
-        to_datetime_if_exists(df, 'openaps/enacted/timestamp')
-        to_datetime_if_exists(df, 'openaps/iob/timestamp')
-        to_datetime_if_exists(df, 'openaps/iob/lastBolusTime')
-        df.rename(columns={time: 'time'}, errors="raise", inplace=True)
+        df.rename(columns={time: 'time'}, errors="raise", inplace=True)  # TODO we should not do this
+        convert_all_device_status_time_columns(df)
         read_record.add(df)
+
+
+def convert_all_device_status_time_columns(df):
+    to_datetime_if_exists(df, 'time')
+    to_datetime_if_exists(df, 'pump/status/timestamp')
+    to_datetime_if_exists(df, 'openaps/enacted/deliverAt')
+    to_datetime_if_exists(df, 'openaps/enacted/timestamp')
+    to_datetime_if_exists(df, 'openaps/iob/timestamp')
+    to_datetime_if_exists(df, 'openaps/iob/lastBolusTime', unit='ms')
 
 
 def to_datetime_if_exists(df, column, unit=None):
