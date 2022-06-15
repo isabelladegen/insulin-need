@@ -94,7 +94,7 @@ def test_reads_only_columns_in_config_from_device_status_from_given_zip_file():
     assert_that(result, is_not(empty()))
     assert_that(Path(test_file).stem, is_(result.zip_id))
     assert_that(result.df.shape[0], greater_than(100))
-    assert_that(result.df.shape[1], equal_to(25))
+    assert_that(result.df.shape[1], equal_to(29))
 
 
 @pytest.mark.skip(reason="takes a real long time reading all data")
@@ -107,7 +107,7 @@ def test_reads_all_device_status_files():
 def test_reads_flat_device_data_file():
     config = TestConfiguration()
     df = read_flat_device_status_file(config)
-    # assert_that(df.shape, is_((10480156, 26)))
+    assert_that(df.shape, is_((10480156, 32)))
     types = df.dtypes
-    for time_col in config.time_cols(): # test that time columns have been converted
+    for time_col in config.time_cols():  # test that time columns have been converted
         assert_that(str(types[time_col]), contains_string('datetime64'))

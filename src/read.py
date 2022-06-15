@@ -50,8 +50,14 @@ class ReadRecord:
 
 # reads flat device data csv and does preprocessing
 def read_flat_device_status_file(config: Configuration):
-    df = pd.read_csv(Path(config.flat_device_status_116_file), dtype=config.device_status_col_type, index_col=0)
-    convert_all_device_status_time_columns(df)
+    df = pd.read_csv(Path(config.flat_device_status_116_file),
+                     dtype=config.device_status_col_type,
+                     index_col=0,
+                     parse_dates=config.time_cols(),
+                     # nrows=100
+                     )
+    to_datetime_if_exists(df, 'openaps/iob/lastBolusTime',
+                          unit='ms')  # only column with time stamp that does not read well
     return df
 
 
@@ -164,25 +170,19 @@ def read_device_status_file_into_df(archive, file, read_record, config):
         # only read files when looping
         # if 'openaps/enacted/deliverAt' in header.columns:
         if columns_to_read:  # if cols is not None read only the columns as specified in the config file
+            time_cols = [k for k in config.time_cols_orig() if k in actual_headers]  # check columns are in this file
             df = pd.read_csv(io_wrapper,
                              usecols=lambda c: c in set(columns_to_read),
                              dtype=specific_cols_dic,
+                             parse_dates=time_cols
                              )
         else:
             df = pd.read_csv(io_wrapper)
         time = 'created_at'
-        df.rename(columns={time: 'time'}, errors="raise", inplace=True)  # TODO we should not do this
-        convert_all_device_status_time_columns(df)
+        df.rename(columns={time: 'time'}, errors="raise",
+                  inplace=True)  # TODO renaming to time for read record, probably not great
+        to_datetime_if_exists(df, 'openaps/iob/lastBolusTime', unit='ms')
         read_record.add(df)
-
-
-def convert_all_device_status_time_columns(df):
-    to_datetime_if_exists(df, 'time')
-    to_datetime_if_exists(df, 'pump/status/timestamp')
-    to_datetime_if_exists(df, 'openaps/enacted/deliverAt')
-    to_datetime_if_exists(df, 'openaps/enacted/timestamp')
-    to_datetime_if_exists(df, 'openaps/iob/timestamp')
-    to_datetime_if_exists(df, 'openaps/iob/lastBolusTime', unit='ms')
 
 
 def to_datetime_if_exists(df, column, unit=None):
