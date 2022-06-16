@@ -7,7 +7,7 @@ from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
     read_all_android_aps_files, read_device_status_from_zip, is_a_device_status_csv_file, read_all_device_status, \
-    read_flat_device_status_file, read_flat_device_status_from_file
+    read_flat_device_status_file, read_flat_device_status_from_file, convert_left_over_time_cols
 
 config = TestConfiguration()
 
@@ -23,7 +23,7 @@ def get_file_for_id(file_id='99908129'):
 def assert_all_time_cols_have_time_dtype(time_cols, df):
     types = df.dtypes
     for time_col in time_cols:  # test that time columns have been converted
-        if time_col in df.columns: # not all files have all columns
+        if time_col in df.columns:  # not all files have all columns
             assert_that(str(types[time_col]).lower(), contains_string('datetime'),
                         reason=str(time_col) + ' is not of dtype datetime64')
 
@@ -124,6 +124,14 @@ def test_reads_original_device_status_data_writes_to_flat_df_reads_it_back():
     # read flat file
     flat_df = read_flat_device_status_from_file(flat_file, config)
     assert_all_time_cols_have_time_dtype(config.time_cols(), flat_df)
+
+
+def test_can_convert_mixed_time_stamp_and_epoch_time_cols():
+    time_cols = ['time']
+    difficult_data = ['2018-11-12T12:35:25.000Z', None, '2018-11-12T12:35:25.000Z', '1542026031970']
+    df = pd.DataFrame({'time': difficult_data})
+    convert_left_over_time_cols(df, time_cols)
+    assert_all_time_cols_have_time_dtype(time_cols, df)
 
 
 @pytest.mark.skip(reason="takes a real long time reading all data")

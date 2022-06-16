@@ -191,6 +191,20 @@ def read_device_status_file_and_convert_date(actual_headers, config, file_to_rea
     return df
 
 
+def try_to_convert_int_to_datetime(value: str):
+    if pd.isnull(value):
+        return value  # just return nils
+    if value.isdigit():
+        result = pd.to_datetime(value, unit='ms', errors='coerce')
+        if pd.isnull(result):  # didn't work -> wrong unit try another
+            result = pd.to_datetime(value, unit='s', errors='coerce')
+            if pd.isnull(result):  # didn't work again
+                print("Couldn't parse integer time stamp with value" + value)
+                return value  # return original value
+        return result
+    return value  # keep original value
+
+
 def convert_left_over_time_cols(df, cols_to_convert: []):
     for col in cols_to_convert:
         sub_df = df[col]
@@ -199,7 +213,7 @@ def convert_left_over_time_cols(df, cols_to_convert: []):
             continue  # already converted nothing needs to be done
         if sub_df.count() == 0:
             continue  # there's no data in this column
-        try:  # changing to int -> if it's an int it might be an epoch time stamp
+        try:  # changing whole column to int -> if it's an int it might be an epoch time stamp
             sub_df.astype(int)
             result = pd.to_datetime(sub_df, unit='ms', errors='coerce')
             if result.count() == 0:  # didn't work -> wrong unit try another
@@ -210,7 +224,11 @@ def convert_left_over_time_cols(df, cols_to_convert: []):
                 df[col] = result
                 continue
         except ValueError:  # not an int try if date with varied timezone
-            print("whatever, we couldn't convert that's ok")
+            try:  # change individual values to int
+                df[col] = sub_df.apply(try_to_convert_int_to_datetime)  # parse the odd into to a datetime
+                df[col] = pd.to_datetime(df[col], utc=True, errors='coerce')
+            except ValueError:
+                print("whatever, we couldn't convert a time value  for col " + col)
 
 
 def to_datetime_if_exists(df, column, unit=None):
