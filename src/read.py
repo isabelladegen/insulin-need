@@ -36,7 +36,7 @@ class ReadRecord:
         else:
             self.df = pd.concat([self.df, df])
 
-    def calculate_stats(self):
+    def calculate_stats(self, time_col_name='time'):
         if self.has_no_files:
             return
         if self.df is None:
@@ -44,21 +44,19 @@ class ReadRecord:
         self.number_of_rows = self.df.shape[0]
         self.number_of_rows_without_nan = self.df.dropna().shape[0]
         self.number_of_rows_with_nan = self.df.shape[0] - self.df.dropna().shape[0]
-        self.earliest_date = str(self.df.time.min())
-        self.newest_date = str(self.df.time.max())
+        self.earliest_date = str(self.df[time_col_name].min())
+        self.newest_date = str(self.df[time_col_name].max())
 
 
 # reads flat device data csv and does preprocessing
 def read_flat_device_status_file(config: Configuration):
-    df = pd.read_csv(Path(config.flat_device_status_116_file),
-                     dtype=config.device_status_col_type,
-                     index_col=0,
-                     parse_dates=config.time_cols(),
-                     # nrows=100
-                     )
-    to_datetime_if_exists(df, 'openaps/iob/lastBolusTime',
-                          unit='ms')  # only column with time stamp that does not read well
+    df = read_flat_device_status_from_file(config.flat_device_status_116_file, config)
     return df
+
+
+# allows path for file to read
+def read_flat_device_status_from_file(file: Path, config: Configuration):
+    return read_device_status_file_and_convert_date(headers_in_file(file), config, file)
 
 
 # reads all BG files from each zip files without extracting the zip
@@ -127,7 +125,10 @@ def read_zip_file(config, file_name, file_check_function, read_file_into_df_func
             read_file_into_df_function(archive, file, read_record, config)
 
         # calculate some information from the dataframe
-        read_record.calculate_stats()
+        time_col_name_for_stats = 'time'
+        if 'device_status' in read_file_into_df_function.__name__:
+            time_col_name_for_stats = 'created_at'
+        read_record.calculate_stats(time_col_name_for_stats)
         return read_record
 
 
@@ -151,38 +152,65 @@ def read_entries_file_into_df(archive, file, read_record, config):
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
     specific_cols_dic = config.device_status_col_type
-    columns_to_read = None
-    if specific_cols_dic:  # only analyse headers if we're reading specific columns
-        columns_to_read = specific_cols_dic.keys()
-        # analyze headers and skip any file that's not data during closed looping or that's from the loop
+    if specific_cols_dic:  # preprocess reading
         with archive.open(file, mode="r") as header_context:
-            header = pd.read_csv(TextIOWrapper(header_context, encoding="utf-8"), nrows=0)
-            actual_headers = header.columns
-            missing_headers = [ele for ele in columns_to_read if ele not in list(actual_headers)]
+            text_io_wrapper = TextIOWrapper(header_context, encoding="utf-8")
+            actual_headers = headers_in_file(text_io_wrapper)
+            missing_headers = [ele for ele in (specific_cols_dic.keys()) if ele not in list(actual_headers)]
             if missing_headers:
                 if not any("enacted" in h for h in actual_headers):
                     return  # this is not a device status file from a looping period
 
                 if not any("openaps" in h for h in actual_headers):
                     return  # this is likely a loop file and won't have bolus information in the file, skip for now
-    with archive.open(file, mode="r") as file_context:
-        io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
-        # only read files when looping
-        # if 'openaps/enacted/deliverAt' in header.columns:
-        if columns_to_read:  # if cols is not None read only the columns as specified in the config file
-            time_cols = [k for k in config.time_cols_orig() if k in actual_headers]  # check columns are in this file
-            df = pd.read_csv(io_wrapper,
-                             usecols=lambda c: c in set(columns_to_read),
-                             dtype=specific_cols_dic,
-                             parse_dates=time_cols
-                             )
-        else:
+        # read file for those headers
+        with archive.open(file, mode="r") as file_context:
+            file_to_read = TextIOWrapper(file_context, encoding="utf-8")
+            df = read_device_status_file_and_convert_date(actual_headers, config, file_to_read)
+    else:  # read file into one big dat file no encoding
+        with archive.open(file, mode="r") as file_context:
+            io_wrapper = TextIOWrapper(file_context, encoding="utf-8")
             df = pd.read_csv(io_wrapper)
-        time = 'created_at'
-        df.rename(columns={time: 'time'}, errors="raise",
-                  inplace=True)  # TODO renaming to time for read record, probably not great
-        to_datetime_if_exists(df, 'openaps/iob/lastBolusTime', unit='ms')
-        read_record.add(df)
+    read_record.add(df)
+
+
+def headers_in_file(file):
+    header = pd.read_csv(file, nrows=0)
+    return header.columns
+
+
+def read_device_status_file_and_convert_date(actual_headers, config, file_to_read):
+    time_cols = [k for k in config.time_cols() if k in actual_headers]  # check columns that are in this file
+    df = pd.read_csv(file_to_read,
+                     usecols=lambda c: c in set(config.device_status_col_type.keys()),
+                     dtype=config.device_status_col_type,
+                     date_parser=lambda c: pd.to_datetime(c, utc=True, errors="ignore"),
+                     parse_dates=time_cols  # if it does not work it will be an object
+                     )
+    convert_left_over_time_cols(df, time_cols)
+    return df
+
+
+def convert_left_over_time_cols(df, cols_to_convert: []):
+    for col in cols_to_convert:
+        sub_df = df[col]
+        col_type = str(sub_df.dtypes).lower()
+        if col_type.startswith('datetime'):
+            continue  # already converted nothing needs to be done
+        if sub_df.count() == 0:
+            continue  # there's no data in this column
+        try:  # changing to int -> if it's an int it might be an epoch time stamp
+            sub_df.astype(int)
+            result = pd.to_datetime(sub_df, unit='ms', errors='coerce')
+            if result.count() == 0:  # didn't work -> wrong unit try another
+                result = pd.to_datetime(sub_df, unit='s', errors='coerce')
+                if result.count() == 0:  # didn't work again
+                    print("Couldn't parse integer time stamp for col " + col)
+            else:  # conversion worked store in time column
+                df[col] = result
+                continue
+        except ValueError:  # not an int try if date with varied timezone
+            print("whatever, we couldn't convert that's ok")
 
 
 def to_datetime_if_exists(df, column, unit=None):

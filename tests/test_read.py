@@ -7,9 +7,25 @@ from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
     read_all_android_aps_files, read_device_status_from_zip, is_a_device_status_csv_file, read_all_device_status, \
-    read_flat_device_status_file
+    read_flat_device_status_file, read_flat_device_status_from_file
 
 config = TestConfiguration()
+
+
+def get_file_for_id(file_id='99908129'):
+    test_data_dir = config.data_dir
+    # get all zip files in folder
+    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
+    test_file = [f for f in filepaths if f.endswith('%s.zip' % file_id)][0]
+    return test_file
+
+
+def assert_all_time_cols_have_time_dtype(time_cols, df):
+    types = df.dtypes
+    for time_col in time_cols:  # test that time columns have been converted
+        if time_col in df.columns: # not all files have all columns
+            assert_that(str(types[time_col]).lower(), contains_string('datetime'),
+                        reason=str(time_col) + ' is not of dtype datetime64')
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
@@ -72,10 +88,8 @@ def test_can_read_android_aps_uploads():
 def test_reads_device_status_from_given_zip_file():
     configuration = TestConfiguration()
     configuration.device_status_col_type = None  # test a config where all columns are read
-    test_data_dir = config.data_dir
     # get all zip files in folder
-    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
-    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
+    test_file = get_file_for_id()
 
     result = read_device_status_from_zip(test_file, configuration)
     assert_that(result, is_not(empty()))
@@ -86,15 +100,30 @@ def test_reads_device_status_from_given_zip_file():
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
 def test_reads_only_columns_in_config_from_device_status_from_given_zip_file():
-    test_data_dir = config.data_dir
-    # get all zip files in folder
-    filepaths = glob.glob(str(test_data_dir) + "/*.zip")
-    test_file = [f for f in filepaths if f.endswith('99908129.zip')][0]
+    test_file = get_file_for_id()
     result = read_device_status_from_zip(test_file, config)
     assert_that(result, is_not(empty()))
     assert_that(Path(test_file).stem, is_(result.zip_id))
     assert_that(result.df.shape[0], greater_than(100))
     assert_that(result.df.shape[1], equal_to(29))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_reads_original_device_status_data_writes_to_flat_df_reads_it_back():
+    # get all zip files in folder
+    test_file = get_file_for_id('14092221')
+    result = read_device_status_from_zip(test_file, config)
+    time_cols_in_file = [col for col in result.df.columns if col in config.time_cols()]
+    assert_that(len(time_cols_in_file), greater_than(0), "There were no time columns")
+    assert_all_time_cols_have_time_dtype(config.time_cols(), result.df)
+
+    # safe flat file and re-read
+    flat_file = Path('data/test_df.csv')
+    result.df.to_csv(flat_file)
+
+    # read flat file
+    flat_df = read_flat_device_status_from_file(flat_file, config)
+    assert_all_time_cols_have_time_dtype(config.time_cols(), flat_df)
 
 
 @pytest.mark.skip(reason="takes a real long time reading all data")
@@ -108,6 +137,4 @@ def test_reads_flat_device_data_file():
     config = TestConfiguration()
     df = read_flat_device_status_file(config)
     assert_that(df.shape, is_((10480156, 32)))
-    types = df.dtypes
-    for time_col in config.time_cols():  # test that time columns have been converted
-        assert_that(str(types[time_col]), contains_string('datetime64'))
+    assert_all_time_cols_have_time_dtype(config.time_cols(), df)

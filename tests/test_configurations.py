@@ -22,17 +22,17 @@ def test_returns_all_enacted_cols():
 
 def test_returns_all_iob_cols():
     cols = TestConfiguration().iob_cols()
-    assert_that(cols, has_length(5))
+    assert_that(cols, has_length(9))
     assert_that(cols, has_item('openaps/iob/lastTemp/rate'))
 
 
 def test_returns_all_pump_cols():
     cols = TestConfiguration().pump_cols()
-    assert_that(cols, has_length(5))
+    assert_that(cols, has_length(7))
     assert_that(cols, has_item('pump/status/bolusing'))
 
 
 def test_returns_all_time_cols():
     cols = TestConfiguration().time_cols()
-    assert_that(cols, has_length(6))
+    assert_that(cols, has_length(7))
     assert_that(cols, has_item('openaps/iob/timestamp'))
