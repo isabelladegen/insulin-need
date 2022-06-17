@@ -34,5 +34,6 @@ def test_returns_all_pump_cols():
 
 def test_returns_all_time_cols():
     cols = TestConfiguration().time_cols()
-    assert_that(cols, has_length(7))
+    assert_that(cols, has_length(8))
     assert_that(cols, has_item('openaps/iob/timestamp'))
+    assert_that(cols, has_item('openaps/iob/lastBolusTime'))
