@@ -49,8 +49,8 @@ class ReadRecord:
 
 
 # reads flat device data csv and does preprocessing
-def read_flat_device_status_file(config: Configuration):
-    df = read_flat_device_status_from_file(config.flat_device_status_116_file, config)
+def read_flat_device_status_file(config: Configuration, file=Configuration().flat_device_status_116_file):
+    df = read_flat_device_status_from_file(file, config)
     return df
 
 
