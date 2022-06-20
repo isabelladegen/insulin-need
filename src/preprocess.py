@@ -16,7 +16,7 @@ def dedub_device_status_dataframes(read_records: [ReadRecord]):
         if record.df is not None:
             cols_to_consider = [col for col in record.df.columns if col in cols_not_all_nan]
             rr.df = record.df.dropna(how='all', subset=cols_to_consider).drop_duplicates(subset=cols_to_consider)
-        rr.zip_id: record.zip_id
+        rr.zip_id = record.zip_id
         rr.has_no_files = record.has_no_files
         rr.number_of_entries_files = record.number_of_entries_files
         rr.is_android_upload = record.is_android_upload
