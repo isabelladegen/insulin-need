@@ -18,3 +18,7 @@ dependencies:
   - plotly
   - sktime
   - tsfresh
+  - stumpy
+#  - pip
+#  - pip:
+#    - matrixprofile -> doesn't work on M1 max
