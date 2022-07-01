@@ -1,10 +1,13 @@
+from datetime import datetime, timezone
+
+import numpy as np
+import pandas as pd
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.format import as_flat_dataframe
 from src.preprocess import dedub_device_status_dataframes
 from src.read import ReadRecord
-from tests.helper.BgDfBuilder import BgDfBuilder
+from tests.helper.BgDfBuilder import BgDfBuilder, create_time_stamps
 from tests.helper.DeviceStatusDfBuilder import DeviceStatusDfBuilder
 from tests.helper.ReadRecordBuilder import ReadRecordBuilder
 
@@ -49,7 +52,45 @@ def test_can_deal_with_missing_columns():
     assert_that(result[0].df.shape, is_((10 - dub_1, number_of_cols - len(drop_cols))))
 
 
-def test_can_deal_none_df():
+def test_can_deal_with_none_df():
     record = ReadRecord()
     result = dedub_device_status_dataframes([record])
     assert_that(result, is_not(None))
+
+
+def group_into_consecutive_intervals(df, minutes):
+    return df.assign(diff_in_min=(diff := df['time'].diff().dt.seconds / 60), group=diff.gt(5).cumsum())
+
+
+def test_returns_list_of_df_with_consecutive_sampling_time():
+    # build df
+    date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
+    date2 = datetime(year=2020, month=8, day=14, hour=6, minute=11, tzinfo=timezone.utc)
+    date3 = datetime(year=2020, month=8, day=14, hour=6, minute=17, tzinfo=timezone.utc)
+
+    no1 = 10
+    no2 = 1
+    no3 = 5
+
+    times1 = create_time_stamps(date1, no1)
+    values1 = list(np.random.randint(50, 400, no1))
+    times2 = [date2]
+    values2 = list(np.random.randint(50, 400, no2))
+    times3 = create_time_stamps(date3, no3)
+    values3 = list(np.random.randint(50, 400, no3))
+
+    df = pd.DataFrame(data={'time': times1 + times2 + times3, 'bg': values1 + values2 + values3})
+
+    # create group columns
+    result = group_into_consecutive_intervals(df, 5)
+
+    assert_that(len(result['group'].unique()), is_(3))  # three groups of 5 min intervals
+    group1 = result.loc[result['group'] == 0]
+    group2 = result.loc[result['group'] == 1]
+    group3 = result.loc[result['group'] == 2]
+    assert_that(list(group1['bg']), is_(values1))
+    assert_that(list(group1['time']), is_(times1))
+    assert_that(list(group2['bg']), is_(values2))
+    assert_that(list(group2['time']), is_(times2))
+    assert_that(list(group3['bg']), is_(values3))
+    assert_that(list(group3['time']), is_(times3))
