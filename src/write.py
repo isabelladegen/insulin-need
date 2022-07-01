@@ -13,7 +13,6 @@ def write_read_record(records, as_flat_file, folder, file_name):
         df.to_csv(file)
     else:
         # create folder
-
         for record in records:
             df = record.df_with_id()
             if df is None:
