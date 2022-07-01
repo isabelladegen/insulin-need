@@ -58,13 +58,8 @@ class ReadRecord:
 
 
 # reads flat device data csv and does preprocessing
-def read_flat_device_status_file(config: Configuration, file=Configuration().flat_device_status_116_file):
-    df = read_flat_device_status_from_file(file, config)
-    return df
-
-
 # allows path for file to read
-def read_flat_device_status_from_file(file: Path, config: Configuration):
+def read_flat_device_status_df_from_file(file: Path, config: Configuration):
     return read_device_status_file_and_convert_date(headers_in_file(file), config, file)
 
 

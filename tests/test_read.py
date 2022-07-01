@@ -7,7 +7,7 @@ from hamcrest import *
 from src.configurations import TestConfiguration, Configuration
 from src.read import read_bg_from_zip, read_all_bg, is_a_bg_csv_file, convert_problem_timestamps, \
     read_all_android_aps_files, read_device_status_from_zip, is_a_device_status_csv_file, read_all_device_status, \
-    read_flat_device_status_file, read_flat_device_status_from_file, convert_left_over_time_cols
+    read_flat_device_status_df_from_file, convert_left_over_time_cols
 
 config = TestConfiguration()
 
@@ -122,7 +122,7 @@ def test_reads_original_device_status_data_writes_to_flat_df_reads_it_back():
     result.df.to_csv(flat_file)
 
     # read flat file
-    flat_df = read_flat_device_status_from_file(flat_file, config)
+    flat_df = read_flat_device_status_df_from_file(flat_file, config)
     assert_all_time_cols_have_time_dtype(config.time_cols(), flat_df)
 
 
@@ -143,6 +143,6 @@ def test_reads_all_device_status_files():
 @pytest.mark.skip(reason="takes a real long time reading all data")
 def test_reads_flat_device_data_file():
     config = TestConfiguration()
-    df = read_flat_device_status_file(config)
+    df = read_flat_device_status_df_from_file(Configuration().flat_device_status_116_file, config)
     assert_that(df.shape, is_((10480156, 32)))
     assert_all_time_cols_have_time_dtype(config.time_cols(), df)

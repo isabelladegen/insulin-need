@@ -1,9 +1,9 @@
-import os
 from pathlib import Path
 
 from src.format import as_flat_dataframe
 
 
+# writes either a flat file (multiple ids) or a file in a per id folder
 def write_read_record(records, as_flat_file, folder, file_name):
     if as_flat_file:
         # turn read records into a flat dataframe
