@@ -5,7 +5,8 @@ import pandas as pd
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.preprocess import dedub_device_status_dataframes
+from src.helper import bg_file_path_for
+from src.preprocess import dedub_device_status_dataframes, group_into_consecutive_intervals
 from src.read import ReadRecord
 from tests.helper.BgDfBuilder import BgDfBuilder, create_time_stamps
 from tests.helper.DeviceStatusDfBuilder import DeviceStatusDfBuilder
@@ -58,11 +59,7 @@ def test_can_deal_with_none_df():
     assert_that(result, is_not(None))
 
 
-def group_into_consecutive_intervals(df, minutes):
-    return df.assign(diff_in_min=(diff := df['time'].diff().dt.seconds / 60), group=diff.gt(5).cumsum())
-
-
-def test_returns_list_of_df_with_consecutive_sampling_time():
+def test_groups_df_into_consecutive_sampling_time():
     # build df
     date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
     date2 = datetime(year=2020, month=8, day=14, hour=6, minute=11, tzinfo=timezone.utc)
@@ -94,3 +91,11 @@ def test_returns_list_of_df_with_consecutive_sampling_time():
     assert_that(list(group2['time']), is_(times2))
     assert_that(list(group3['bg']), is_(values3))
     assert_that(list(group3['time']), is_(times3))
+
+
+def test_grouping_can_deal_with_nan_values():
+    df = BgDfBuilder().build(add_nan=2)
+
+    result = group_into_consecutive_intervals(df, 5)
+    assert_that(len(result['group'].unique()), is_(1))
+

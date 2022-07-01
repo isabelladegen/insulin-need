@@ -23,3 +23,7 @@ def dedub_device_status_dataframes(read_records: [ReadRecord]):
         rr.calculate_stats('created_at')
         results.append(rr)
     return results
+
+
+def group_into_consecutive_intervals(df, minutes):
+    return df.assign(diff_in_min=(diff := df['time'].diff().dt.seconds / 60), group=diff.gt(minutes).cumsum())
