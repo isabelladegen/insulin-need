@@ -12,7 +12,7 @@ def main():
     folder = flat_file_folder if as_flat_file else per_id_folder
     config = Configuration()
     result = read_all_bg(config)
-    write_read_record(result, as_flat_file, folder, 'bg_df.csv')
+    write_read_record(result, as_flat_file, folder, config.bg_file)
 
 
 if __name__ == "__main__":

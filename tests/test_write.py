@@ -5,6 +5,7 @@ import pandas as pd
 from pathlib import Path
 from hamcrest import *
 
+from src.read_df import read_df_from_csv
 from src.write import write_read_record
 from tests.helper.BgDfBuilder import BgDfBuilder
 from tests.helper.ReadRecordBuilder import ReadRecordBuilder
@@ -53,13 +54,6 @@ def test_writes_csv_per_id():
         files_for_id = [file for file in filepaths if record.zip_id in file]
         df = read_df_from_csv(files_for_id[0])
         assert_that(record.df_with_id().equals(df))
-
-
-def read_df_from_csv(file):
-    df = pd.read_csv(file, index_col=[0])
-    df['time'] = pd.to_datetime(df['time'])
-    df['id'] = df['id'].astype("string")
-    return df
 
 
 def per_id_files():

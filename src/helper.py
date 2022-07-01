@@ -2,8 +2,12 @@
 
 # calculates a df of all the different read records
 import dataclasses
+import glob
+from pathlib import Path
 
 import pandas as pd
+
+from src.configurations import Configuration
 
 
 def dataframe_of_read_record_stats(read_records: []):
@@ -18,3 +22,16 @@ def dataframe_of_read_record_stats(read_records: []):
             }
     return pd.DataFrame(data)
 
+
+def files_for_id(folder, zip_id):
+    return glob.glob(str(Path(folder, zip_id).resolve()) + "/*.csv")
+
+
+def bg_file_path_for(folder, zip_id):
+    files = files_for_id(folder, zip_id)
+    return Path(list(filter(lambda x: Configuration().bg_file in x, files))[0])
+
+
+def device_status_file_path_for(folder, zip_id):
+    files = files_for_id(folder, zip_id)
+    return Path(list(filter(lambda x: Configuration().device_file in x, files))[0])

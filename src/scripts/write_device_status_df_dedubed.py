@@ -14,7 +14,7 @@ def main():
     config = Configuration()
     result = read_all_device_status(config)
     de_dub_result = dedub_device_status_dataframes(result)
-    write_read_record(de_dub_result, as_flat_file, folder, 'device_status_dedubed.csv')
+    write_read_record(de_dub_result, as_flat_file, folder, config.device_file)
 
 
 if __name__ == "__main__":
