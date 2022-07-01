@@ -8,11 +8,10 @@ from src.read import ReadRecord
 def as_flat_dataframe(records: [ReadRecord], drop_na: bool = False):
     result = None
     for record in records:
-        # add id column
-        if record.df is None:
+        # get df with id column
+        df = record.df_with_id()
+        if df is None:
             continue
-        df = record.df.copy()
-        df.insert(loc=0, column='id', value=record.zip_id)
 
         # concat to resulting df
         if result is None:

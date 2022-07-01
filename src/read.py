@@ -30,6 +30,15 @@ class ReadRecord:
     def zero_files(self):
         self.has_no_files = True
 
+    # return its own dataframe with the id added
+    def df_with_id(self):
+        if self.df is None:
+            return None
+        result = self.df.copy()
+        result.insert(loc=0, column='id', value=self.zip_id)
+        result['id'] = result['id'].astype("string")
+        return result
+
     def add(self, df):
         if self.df is None:
             self.df = df

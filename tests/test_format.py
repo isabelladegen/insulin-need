@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from hamcrest import *
 
 from src.format import as_flat_dataframe
