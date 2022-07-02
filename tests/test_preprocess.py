@@ -6,7 +6,8 @@ from hamcrest import *
 
 from src.configurations import Configuration
 from src.helper import bg_file_path_for
-from src.preprocess import dedub_device_status_dataframes, group_into_consecutive_intervals
+from src.preprocess import dedub_device_status_dataframes, group_into_consecutive_intervals, \
+    number_of_groups_with_more_than_x_items
 from src.read import ReadRecord
 from tests.helper.BgDfBuilder import BgDfBuilder, create_time_stamps
 from tests.helper.DeviceStatusDfBuilder import DeviceStatusDfBuilder
@@ -99,3 +100,22 @@ def test_grouping_can_deal_with_nan_values():
     result = group_into_consecutive_intervals(df, 5)
     assert_that(len(result['group'].unique()), is_(1))
 
+
+def test_counts_how_many_groups_have_more_than_x_items():
+    example_groups = [0, 0, 0, 1, 2, 2]
+    cut_off = 3
+
+    df = pd.DataFrame(data={'group': example_groups})
+
+    result = number_of_groups_with_more_than_x_items(df, cut_off)
+    assert_that(result, is_(1))
+
+
+def test_counts_how_many_groups_have_more_than_x_items_can_deal_with_0():
+    example_groups = [0, 0, 0, 1, 2, 2]
+    cut_off = 4
+
+    df = pd.DataFrame(data={'group': example_groups})
+
+    result = number_of_groups_with_more_than_x_items(df, cut_off)
+    assert_that(result, is_(0))
