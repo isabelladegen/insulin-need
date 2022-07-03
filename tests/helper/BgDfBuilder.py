@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 
 
-def create_time_stamps(start_dt, rows):
+def create_time_stamps(start_dt, rows, interval_in_min=5):
     result = []
     dt = start_dt
-    values_interval = timedelta(minutes=5)
+    values_interval = timedelta(minutes=interval_in_min)
     for i in range(rows):
         result.append(dt)
         dt = dt + values_interval

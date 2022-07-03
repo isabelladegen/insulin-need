@@ -7,7 +7,7 @@ from hamcrest import *
 from src.configurations import Configuration
 from src.helper import bg_file_path_for
 from src.preprocess import dedub_device_status_dataframes, group_into_consecutive_intervals, \
-    number_of_groups_with_more_than_x_items
+    number_of_groups_with_more_than_x_items, number_of_interval_in_days, continuous_subseries
 from src.read import ReadRecord
 from tests.helper.BgDfBuilder import BgDfBuilder, create_time_stamps
 from tests.helper.DeviceStatusDfBuilder import DeviceStatusDfBuilder
@@ -119,3 +119,30 @@ def test_counts_how_many_groups_have_more_than_x_items_can_deal_with_0():
 
     result = number_of_groups_with_more_than_x_items(df, cut_off)
     assert_that(result, is_(0))
+
+
+def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval():
+    time_col = 'time'
+    interval = 15  # sampling interval
+    # only keep continuous 15 sampled series for 2 days
+    min_length = number_of_interval_in_days(2, interval)
+
+    # build df with 2 series sampled at interval i and of at least length min_length
+    # and 1 series less than length min_length
+    date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
+    date2 = datetime(year=2020, month=8, day=14, hour=6, minute=11, tzinfo=timezone.utc)
+    date3 = datetime(year=2021, month=8, day=14, hour=6, minute=17, tzinfo=timezone.utc)
+
+    times1 = create_time_stamps(date1, min_length, interval)
+    times2 = create_time_stamps(date2, min_length - 1, interval)  # this will not be long enough
+    times3 = create_time_stamps(date3, min_length + 1, interval)  # this will be longer and be in
+
+    df = pd.DataFrame(data={time_col: times2 + times1 + times3})  # wrong order to force sorting
+
+    result = continuous_subseries(df, min_length, interval, time_col)
+    sub_df1 = result[0]
+    sub_df2 = result[1]
+
+    assert_that(len(result), is_(2), "There wasn't 2 continuous sampled sub series")
+    assert_that(list(sub_df1[time_col]) == times1)
+    assert_that(list(sub_df2[time_col]) == times3)
