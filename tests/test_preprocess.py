@@ -5,7 +5,6 @@ import pandas as pd
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.helper import bg_file_path_for
 from src.preprocess import dedub_device_status_dataframes, group_into_consecutive_intervals, \
     number_of_groups_with_more_than_x_items, number_of_interval_in_days, continuous_subseries
 from src.read import ReadRecord
