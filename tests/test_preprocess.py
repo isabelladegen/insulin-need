@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 import pandas as pd
@@ -93,6 +93,33 @@ def test_groups_df_into_consecutive_sampling_time():
     assert_that(list(group3['time']), is_(times3))
 
 
+def test_groups_df_into_consecutive_sampling_time_respecting_date():
+    time_col = 'time'
+    interval = 15  # sampling interval
+    # only keep continuous 15 sampled series for 2 days
+    min_length = number_of_interval_in_days(2, interval)
+
+    # build time series
+    date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
+    date2 = datetime(year=2020, month=3, day=14, hour=6, minute=11, tzinfo=timezone.utc)
+    date2_more = date2 + timedelta(minutes=10)
+    date3 = datetime(year=2021, month=8, day=14, hour=6, minute=17, tzinfo=timezone.utc)
+
+    # Two series sampled at interval i and of at least length min_length
+    times1 = create_time_stamps(date1, min_length, interval)
+    times3 = create_time_stamps(date3, min_length + 1, interval)  # this will be longer and be in
+    # One series less than length min_length but with more sample
+    times2 = create_time_stamps(date2, min_length, interval)  # this will not be long enough
+    times2_more = create_time_stamps(date2_more, min_length, interval)
+    times_too_short = times2 + times2_more
+
+    df = pd.DataFrame(data={time_col: times_too_short + times1 + times3})  # wrong order to force sorting
+
+    result = group_into_consecutive_intervals(df, interval, time_col)
+
+    assert_that(len(result['group'].unique()), is_(3))
+
+
 def test_grouping_can_deal_with_nan_values():
     df = BgDfBuilder().build(add_nan=2)
 
@@ -126,17 +153,21 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
     # only keep continuous 15 sampled series for 2 days
     min_length = number_of_interval_in_days(2, interval)
 
-    # build df with 2 series sampled at interval i and of at least length min_length
-    # and 1 series less than length min_length
+    # build time series
     date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
-    date2 = datetime(year=2020, month=8, day=14, hour=6, minute=11, tzinfo=timezone.utc)
+    date2 = datetime(year=2020, month=3, day=14, hour=6, minute=11, tzinfo=timezone.utc)
+    date2_more = date2 + timedelta(minutes=10)
     date3 = datetime(year=2021, month=8, day=14, hour=6, minute=17, tzinfo=timezone.utc)
 
+    # Two series sampled at interval i and of at least length min_length
     times1 = create_time_stamps(date1, min_length, interval)
-    times2 = create_time_stamps(date2, min_length - 1, interval)  # this will not be long enough
     times3 = create_time_stamps(date3, min_length + 1, interval)  # this will be longer and be in
+    # One series less than length min_length but with more sample
+    times2 = create_time_stamps(date2, min_length-2, interval)  # this will not be long enough
+    times2_more = create_time_stamps(date2_more, min_length-2, interval)
+    times_too_short = times2 + times2_more
 
-    df = pd.DataFrame(data={time_col: times2 + times1 + times3})  # wrong order to force sorting
+    df = pd.DataFrame(data={time_col: times_too_short + times1 + times3})  # wrong order to force sorting
 
     result = continuous_subseries(df, min_length, interval, time_col)
     sub_df1 = result[0]

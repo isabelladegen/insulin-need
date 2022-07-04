@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from src.configurations import Configuration
 from src.read import ReadRecord
 
@@ -27,7 +29,7 @@ def dedub_device_status_dataframes(read_records: [ReadRecord]):
 
 def group_into_consecutive_intervals(df, minutes, time_col='time'):
     df.sort_values(by=time_col, inplace=True)
-    return df.assign(diff_in_min=(diff := df[time_col].diff().dt.seconds / 60), group=diff.gt(minutes).cumsum())
+    return df.assign(diff_in_min=(diff := df[time_col].diff()), group=diff.gt(timedelta(minutes=minutes)).cumsum())
 
 
 def number_of_groups_with_more_than_x_items(df, x):
@@ -41,19 +43,25 @@ def number_of_interval_in_days(days, minute_interval):
 
 
 # splits df into smaller df where the items are sampled at interval and there's at least min_length continuous intervals
-def continuous_subseries(df, min_length, interval, time_col):
+def continuous_subseries(df, min_length, interval_in_min, time_col):
     # group original df into groups that are sampled at least more than the given interval
-    grouped_df = group_into_consecutive_intervals(df, interval, time_col)
+    grouped_df = group_into_consecutive_intervals(df, interval_in_min, time_col)
 
     # get list of group numbers where the value count is at least min_length
-    groups_of_min_length = grouped_df['group'].value_counts() >= min_length
+    # downsample each group to the interval required, then count the values
 
     result = []
-    for group_idx in range(len(groups_of_min_length)):
-        if not groups_of_min_length[group_idx]:
-            continue  # group shorter than min length
-        subdf = grouped_df.loc[grouped_df['group'] == group_idx]
-        result.append(subdf[list(df.columns)])
+    for group_idx in grouped_df['group'].unique():
+        group_sub_df = grouped_df.loc[grouped_df['group'] == group_idx]
+        # skip groups that don't have enough samples
+        if group_sub_df.shape[0] < min_length:
+            continue
+        # resample the group to remove more frequent readings
+        resampled = group_sub_df.resample(str(interval_in_min) + 'min', on=time_col).first()
+        # skip groups only have enough samples due to being more frequent than interval
+        if resampled.shape[0] < min_length:
+            continue
+        # add the original df for groups with the right number and frequency of samples
+        result.append(group_sub_df[list(df.columns)])
 
-    # only keep the groups that have
     return result
