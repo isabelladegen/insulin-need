@@ -21,12 +21,14 @@ def test_resamples_df():
     # build df of 3 days of data, sampled hourly
     times = create_time_stamps(start_date, min_length, interval)
     values = list(np.random.randint(50, 400, min_length))
-    df = pd.DataFrame(data={time_col: times, sample_col: values})
+    df = pd.DataFrame(data={time_col: times, sample_col: values, 'distraction_col': values})
 
-    result = resample_df(df, '1D', time_col)
+    result = resample_df(df, '1D', time_col, sample_col)
     resulting_times = list(result.index)
 
-    assert_that(result.shape[0], is_(4), "There wasn't three days of data")
+    assert_that(result.shape, is_((4, 4)), "There wasn't three days of data")
+    assert_that(list(result.columns),
+                has_items((sample_col, 'min'), (sample_col, 'max'), (sample_col, 'mean'), (sample_col, 'std')))
     assert_that(resulting_times[0], is_(start_date.date()))
     assert_that(resulting_times[1], is_(start_date.date() + timedelta(days=1)))
     assert_that(resulting_times[2], is_(start_date.date() + timedelta(days=2)))
