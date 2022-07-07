@@ -56,3 +56,18 @@ def test_returns_x_for_discord_area():
     x = mp.least_similar_x()
     # |ts|-m+1 is number of entries in the matrix profile, but indexed at 0
     assert_that(x, is_(len(times) - motif_length))
+
+
+def test_returns_top_motifs_for_ts():
+    motif_length = 3
+    mp = MatrixProfile(times, values, motif_length)
+    max_distance = 1.0
+
+    motif_distances, motif_indices = mp.top_motives(max_distance)
+
+    assert_that(len(motif_indices), is_(len(motif_distances)))
+
+
+def test_can_show_top_motives():
+    # no assert just checking the plot function does not error
+    MatrixProfile(times, values, 3).plot_top_motives_for_max_distance_and_min_neighbours('y label', 'x_label', 2.0, 2)

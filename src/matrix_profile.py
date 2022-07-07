@@ -94,3 +94,30 @@ class MatrixProfile:
     # see paper: https://core.ac.uk/download/pdf/287941767.pdf
     def max_possible_distance(self):
         return round(2 * sqrt(self.__motif_length_m), 2)
+
+    # see top motifs https://stumpy.readthedocs.io/en/latest/api.html#motifs
+    # returns  motif_distances and motif_indices
+    def top_motives(self, max_distance: float, min_neighbours: int = 1):
+        return stumpy.motifs(self.__values, self.mp[:, 0], min_neighbors=min_neighbours, max_distance=max_distance)
+
+    def plot_top_motives_for_max_distance_and_min_neighbours(self, y_label: str, x_label: str, max_distance: float,
+                                                             min_neighbours: int = 1):
+        motif_distances, motif_indices = self.top_motives(max_distance, min_neighbours)
+        plt.rcParams['figure.figsize'] = (20, 10)
+        fig, ax = plt.subplots()
+        plt.rcParams.update({'font.size': 20})
+
+        plt.suptitle('Top motifs with distance less than ' + str(max_distance)
+                     + ', min neighbours ' + str(min_neighbours)
+                     + ', m=' + str(self.__motif_length_m))
+        ax.plot(self.__index, self.__values, marker='o')  # plot ts with time as index
+        ax.set_ylabel(y_label)
+        ax.set_xlabel(x_label)
+        # highlight the motifs
+        for idx in list(motif_indices[0]):
+            ax.plot(self.__index[idx:idx + self.__motif_length_m], self.__values[idx:idx + self.__motif_length_m],
+                    linewidth=3, marker='o')
+            ax.axvline(x=self.__index[idx], linestyle="dashed")
+
+        plt.tight_layout()
+        plt.show()
