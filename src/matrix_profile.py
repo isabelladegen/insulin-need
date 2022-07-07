@@ -21,30 +21,32 @@ class MatrixProfile:
         return motif_idx, nearest_neighbor_idx
 
     def get_distance_for_motif(self, motif_idx: int):
-        return self.mp[motif_idx, 0]
+        return round(self.mp[motif_idx, 0], 3)
 
     def describe_time_series(self):
         ts_start_date = self.__index[0].strftime('%Y-%m-%d %a')
         ts_end_date = self.__index[-1].strftime('%Y-%m-%d %a')
-        max_mp_distance = round(2 * sqrt(self.__motif_length_m), 2)
+        max_mp_distance = self.max_possible_distance()
         median_frequency = pd.Series(data=self.__index).diff().median()
         describe = pd.Series(data=self.__values).describe()
+        print(f'max possible mp distance is {max_mp_distance}')
         print(f'Time Series start date is {ts_start_date}')
         print(f'Time Series end date is {ts_end_date}')
         print(f'Time Series median frequency {median_frequency}')
         print(f'Distribution of values is {describe}')
-        print(f'max mp distance is {max_mp_distance}')
 
     # if x is zero it will be the motif with the lowest distance
     def describe_motif_x(self, x: int):
         motif_idx, nearest_neighbor_idx = self.get_motif_and_nearest_neighbor_idx_for_xth_motif(x)
         motif_start_date_str = self.__index[motif_idx].strftime('%Y-%m-%d %a')
         nearest_neighbor_start_date_str = self.__index[nearest_neighbor_idx].strftime('%Y-%m-%d %a')
+        distance_to_nearest_neighbour = round(self.mp[motif_idx, 0], 1)
+        nearest_neighours_distance_to_its_nearest_neighbour = round(self.mp[nearest_neighbor_idx, 0], 2)
         print(f'Motive Index is {motif_idx}')
         print(f'Nearest Neighbour Index is {nearest_neighbor_idx}')
-        print(f'Motive Distance to nearest neighbour is {self.mp[motif_idx, 0]}')
+        print(f'Motive Distance to nearest neighbour is {distance_to_nearest_neighbour}')
         print(f'Nearest neighbours\' is nearest to idx {self.mp[nearest_neighbor_idx, 1]} '
-              f'with distance {self.mp[nearest_neighbor_idx, 0]}')
+              f'with distance {nearest_neighours_distance_to_its_nearest_neighbour}')
         print(f'Motive start date is: {motif_start_date_str}')
         print(f'Nearest neighbour start date is: {nearest_neighbor_start_date_str}')
 
@@ -84,3 +86,11 @@ class MatrixProfile:
         plt.tight_layout()
         plt.xlabel(overall_x_label)
         plt.show()
+
+    # returns index of the matrix profile for the motif that is the least similar to anywhere else - a discord
+    def least_similar_x(self):
+        return len(self.__motif_index_sorted) - 1
+
+    # see paper: https://core.ac.uk/download/pdf/287941767.pdf
+    def max_possible_distance(self):
+        return round(2 * sqrt(self.__motif_length_m), 2)

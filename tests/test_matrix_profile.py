@@ -47,3 +47,12 @@ def test_can_show_matrix_profile_plot():
     mp = MatrixProfile(times, values, motif_length)
     # there is no assert as this test actually plots the graph, it will throw an exception if something is amiss
     mp.plot_ts_motif_and_profile(0, 'TS Y label', 'Time')
+
+
+def test_returns_x_for_discord_area():
+    motif_length = 7
+    mp = MatrixProfile(times, values, motif_length)
+
+    x = mp.least_similar_x()
+    # |ts|-m+1 is number of entries in the matrix profile, but indexed at 0
+    assert_that(x, is_(len(times) - motif_length))
