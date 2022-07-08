@@ -52,7 +52,7 @@ class MatrixProfile:
 
     # if x is zero it will be the motif with the lowest distance
     def plot_ts_motif_and_profile(self, x: int, ts_y_label: str, overall_x_label: str):
-        plt.rcParams['figure.figsize'] = (20, 10)
+        plt.rcParams['figure.figsize'] = (20, 15)
         fig, axs = plt.subplots(2, sharex=True)
         plt.rcParams.update({'font.size': 20})
 
