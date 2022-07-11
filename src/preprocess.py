@@ -28,8 +28,9 @@ def dedub_device_status_dataframes(read_records: [ReadRecord]):
 
 
 def group_into_consecutive_intervals(df, max_gap_in_min, time_col='time'):
-    df.sort_values(by=time_col, inplace=True)
-    return df.assign(diff_in_min=(diff := df[time_col].diff()), group=diff.gt(timedelta(minutes=max_gap_in_min)).cumsum())
+    sorted_df = df.sort_values(by=time_col)
+    return sorted_df.assign(diff_in_min=(diff := sorted_df[time_col].diff()),
+                            group=diff.gt(timedelta(minutes=max_gap_in_min)).cumsum())
 
 
 def number_of_groups_with_more_than_x_items(df, x):

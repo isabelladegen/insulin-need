@@ -107,7 +107,7 @@ class MatrixProfile:
         fig, ax = plt.subplots()
         plt.rcParams.update({'font.size': 20})
 
-        plt.suptitle('Top motifs with distance less than ' + str(max_distance)
+        plt.suptitle('Top motifs with distance less than ' + str(round(max_distance, 2))
                      + ', min neighbours ' + str(min_neighbours)
                      + ', m=' + str(self.__motif_length_m))
         ax.plot(self.__index, self.__values, marker='o')  # plot ts with time as index
