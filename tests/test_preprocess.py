@@ -123,7 +123,7 @@ def test_groups_df_into_consecutive_sampling_time_respecting_date():
 def test_grouping_can_deal_with_nan_values():
     df = BgDfBuilder().build(add_nan=2)
 
-    result = group_into_consecutive_intervals(df, 5)
+    result = group_into_consecutive_intervals(df, 10)
     assert_that(len(result['group'].unique()), is_(1))
 
 
@@ -163,8 +163,8 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
     times1 = create_time_stamps(date1, min_length, interval)
     times3 = create_time_stamps(date3, min_length + 1, interval)  # this will be longer and be in
     # One series less than length min_length but with more sample
-    times2 = create_time_stamps(date2, min_length-2, interval)  # this will not be long enough
-    times2_more = create_time_stamps(date2_more, min_length-2, interval)
+    times2 = create_time_stamps(date2, min_length - 2, interval)  # this will not be long enough
+    times2_more = create_time_stamps(date2_more, min_length - 2, interval)
     times_too_short = times2 + times2_more
 
     df = pd.DataFrame(data={time_col: times_too_short + times1 + times3})  # wrong order to force sorting
@@ -176,3 +176,19 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
     assert_that(len(result), is_(2), "There wasn't 2 continuous sampled sub series")
     assert_that(list(sub_df1[time_col]) == times1)
     assert_that(list(sub_df2[time_col]) == times3)
+
+
+def test_ensures_there_is_a_value_and_time_stamp_at_min_interval():
+    time_col = 't'
+    value_col = 'v'
+    interval = 15
+    day1 = datetime(year=2018, month=12, day=25, hour=0, minute=0, tzinfo=timezone.utc)
+    times = create_time_stamps(day1, number_of_interval_in_days(3, interval), interval)
+    values = list(np.random.uniform(low=0.1, high=14.6, size=len(times)))
+    # remove values to split time series based on missing values
+    values[96:100] = [None, None, None, None]
+
+    df = pd.DataFrame(data={time_col: times, value_col: values})
+    result = continuous_subseries(df, 1, interval, time_col, value_col)
+
+    assert_that(len(result), is_(2))

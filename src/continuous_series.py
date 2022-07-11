@@ -23,7 +23,7 @@ class ContinuousSeries:
         self.__min_series_length = number_of_interval_in_days(self.__min_days_of_data,
                                                               self.__max_interval_between_readings)
         self.subseries = continuous_subseries(self.df, self.__min_series_length, self.__max_interval_between_readings,
-                                              self.__time_column)
+                                              self.__time_column, self.__value_column)
         self.__resample_rule = resample_rule
         self.resampled_series = self.__resample()
 
@@ -49,7 +49,7 @@ class ContinuousSeries:
         height = 15
         number_of_plots = len(self.resampled_series)
 
-        plt.rcParams.update({'font.size': 30})
+        plt.rcParams.update({'font.size': 15})
         fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height))
 
         title = 'Resampled Time Series. Resample rule: ' \

@@ -27,9 +27,9 @@ def dedub_device_status_dataframes(read_records: [ReadRecord]):
     return results
 
 
-def group_into_consecutive_intervals(df, minutes, time_col='time'):
+def group_into_consecutive_intervals(df, max_gap_in_min, time_col='time'):
     df.sort_values(by=time_col, inplace=True)
-    return df.assign(diff_in_min=(diff := df[time_col].diff()), group=diff.gt(timedelta(minutes=minutes)).cumsum())
+    return df.assign(diff_in_min=(diff := df[time_col].diff()), group=diff.gt(timedelta(minutes=max_gap_in_min)).cumsum())
 
 
 def number_of_groups_with_more_than_x_items(df, x):
@@ -42,9 +42,12 @@ def number_of_interval_in_days(days, minute_interval):
     return int(days * 24 * 60 / minute_interval)
 
 
-# splits df into smaller df where the items are sampled at interval and there's at least min_length continuous intervals
-def continuous_subseries(df, min_length, interval_in_min, time_col):
+# splits df into smaller dfs of items that are sampled at interval and there's at least min_length continuous intervals
+# if value_col is provided than nan's in value col will be dropped to keep the frequency for time and value columns
+def continuous_subseries(df, min_length, interval_in_min, time_col, value_col: str = None):
     # group original df into groups that are sampled at least more than the given interval
+    if value_col is not None:
+        df = df.dropna(subset=[value_col])
     grouped_df = group_into_consecutive_intervals(df, interval_in_min, time_col)
 
     # get list of group numbers where the value count is at least min_length
