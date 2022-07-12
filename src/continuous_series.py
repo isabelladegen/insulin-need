@@ -58,10 +58,21 @@ class ContinuousSeries:
                 + str(self.__min_days_of_data)
         fig.suptitle(title)
 
+        std_col_name = 'std'
+        mean_col_name = 'mean'
+
         for idx, df in enumerate(self.resampled_series):
+            # multi index column
             y = df[self.__value_column]
+            std = y[std_col_name]
+            mean = y[mean_col_name]
+            columns_to_plot_as_lines = list(y.columns)
+            columns_to_plot_as_lines.remove(std_col_name)
+            columns_to_plot_as_lines.remove(mean_col_name)
+            y = y[columns_to_plot_as_lines]
             axs[idx].plot(df.index, y, marker='o',
-                          label=list(y.columns))  # plot with time as index
+                           label=columns_to_plot_as_lines)  # plot with time as index
+            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=mean_col_name)
             axs[idx].set_xlabel('')
             axs[idx].legend().set_visible(False)
 
