@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, ticker
 
 from src.preprocess import number_of_interval_in_days, continuous_subseries
 from src.resample import resample_df
@@ -46,7 +46,7 @@ class ContinuousSeries:
 
     def plot_resampled_series(self):
         width = 20
-        height = 15
+        height = 20
         number_of_plots = len(self.resampled_series)
 
         plt.rcParams.update({'font.size': 15})
@@ -74,6 +74,7 @@ class ContinuousSeries:
                            label=columns_to_plot_as_lines)  # plot with time as index
             axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=mean_col_name)
             axs[idx].set_xlabel('')
+            axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
             axs[idx].legend().set_visible(False)
 
         lines, labels = fig.axes[-1].get_legend_handles_labels()
