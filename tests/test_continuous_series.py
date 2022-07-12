@@ -5,8 +5,11 @@ import numpy as np
 import pandas as pd
 from hamcrest import *
 
+from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries
+from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
+from src.read import read_flat_device_status_df_from_file
 from tests.helper.BgDfBuilder import create_time_stamps
 
 max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every two hours
@@ -50,3 +53,23 @@ def test_plots_resampled_z_score_normalised_value():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
     # no asserts as it generates a plot
     series.plot_z_score_normalised_resampled_series()
+
+
+def test_plots_heatmap_of_sum_of_values():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    # no asserts as it generates a plot
+    series.plot_heathmap_resampled()
+
+
+# def test_temp():
+#     zip_id = '14092221'
+#     max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
+#     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
+#     sample_rule = '1D'  # the frequency of the regular time series after resampling
+#     time_col = 'openaps/enacted/timestamp'
+#     value_col = 'openaps/enacted/IOB'
+#     file = device_status_file_path_for('../data/perid', zip_id)
+#     full_df = read_flat_device_status_df_from_file(file, Configuration())
+#     series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+#     series.plot_heathmap_resampled()

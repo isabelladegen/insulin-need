@@ -1,5 +1,9 @@
+from calendar import calendar
+from math import ceil
+
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib import pyplot as plt, ticker
 
 from src.preprocess import number_of_interval_in_days, continuous_subseries
@@ -123,3 +127,46 @@ class ContinuousSeries:
         fig.supylabel(self.__value_column)
         fig.tight_layout(pad=2)
         plt.show()
+
+    def plot_heathmap_resampled(self):
+        y_axis = 'Day of week'
+        x_axis = 'Month'
+        data = None
+        # build one big dataframe of all the subseries
+        for df in self.resampled_series:
+            new_df = df.copy()
+            new_df.columns = new_df.columns.droplevel()
+            new_df[y_axis] = new_df.index.dayofweek
+            # new_df[self.week_of_month] = pd.Series(new_df.index).apply(lambda d: self.calulate_week_of_month(d)).values
+            new_df[x_axis] = new_df.index.month
+
+            if data is None:
+                data = new_df
+            else:
+                data = pd.concat([data, new_df])
+
+        data = data[[y_axis, self.mean_col_name, x_axis]]
+        data[self.mean_col_name] = data[self.mean_col_name].astype(np.float64)
+        pivot = pd.pivot_table(data=data,
+                               index=y_axis,
+                               values=self.mean_col_name,
+                               columns=x_axis,
+                               aggfunc=np.mean)
+        # aggfunc=lambda x: self.some_magic(x))
+
+        ax = sns.heatmap(pivot, linewidth=0.5)
+        ax.set(title="Heatmap of mean values")
+
+        plt.show()
+
+
+# def some_magic(self, x):
+#     print(x)
+#     return x.count()
+
+# def calulate_week_of_month(self, dt):
+#     first_day = dt.replace(day=1)
+#     dom = dt.day
+#     adjusted_dom = dom + (1 + first_day.weekday()) % 7
+#
+#     return int(ceil(adjusted_dom / 7.0))
