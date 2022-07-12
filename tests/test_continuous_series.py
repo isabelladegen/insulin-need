@@ -44,3 +44,9 @@ def test_returns_index_and_value_column_for_resampled_value():
     assert_that(len(y), is_(resampled_df.shape[0]))
     assert_that(x, is_(list(resampled_df.index)))
     assert_that(y.equals(resampled_df[value_col][col].astype(np.float64)))
+
+
+def test_plots_resampled_z_score_normalised_value():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+    # no asserts as it generates a plot
+    series.plot_z_score_normalised_resampled_series()

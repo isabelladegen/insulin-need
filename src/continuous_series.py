@@ -3,10 +3,14 @@ import pandas as pd
 from matplotlib import pyplot as plt, ticker
 
 from src.preprocess import number_of_interval_in_days, continuous_subseries
-from src.resample import resample_df
+from src.resample import resample_df, z_score_normalise
 
 
 class ContinuousSeries:
+    std_col_name = 'std'
+    mean_col_name = 'mean'
+    z_score_col_name = 'z-score'
+
     def __init__(self, df: pd.DataFrame,
                  min_days_of_data: int,
                  max_interval_between_reading: int,
@@ -30,8 +34,10 @@ class ContinuousSeries:
     def __resample(self):
         result = []
         for group in self.subseries:
-            result.append(
-                resample_df(group, self.__resample_rule, self.__time_column, self.__value_column))
+            ts = resample_df(group, self.__resample_rule, self.__time_column, self.__value_column)
+            ts = z_score_normalise(ts, (self.__value_column, self.mean_col_name),
+                                   (self.__value_column, self.z_score_col_name))
+            result.append(ts)
         return result
 
     def describe(self):
@@ -58,21 +64,19 @@ class ContinuousSeries:
                 + str(self.__min_days_of_data)
         fig.suptitle(title)
 
-        std_col_name = 'std'
-        mean_col_name = 'mean'
-
         for idx, df in enumerate(self.resampled_series):
             # multi index column
             y = df[self.__value_column]
-            std = y[std_col_name]
-            mean = y[mean_col_name]
+            std = y[self.std_col_name]
+            mean = y[self.mean_col_name]
             columns_to_plot_as_lines = list(y.columns)
-            columns_to_plot_as_lines.remove(std_col_name)
-            columns_to_plot_as_lines.remove(mean_col_name)
+            columns_to_plot_as_lines.remove(self.std_col_name)
+            columns_to_plot_as_lines.remove(self.mean_col_name)
+            columns_to_plot_as_lines.remove(self.z_score_col_name)
             y = y[columns_to_plot_as_lines]
             axs[idx].plot(df.index, y, marker='o',
-                           label=columns_to_plot_as_lines)  # plot with time as index
-            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=mean_col_name)
+                          label=columns_to_plot_as_lines)  # plot with time as index
+            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=self.mean_col_name)
             axs[idx].set_xlabel('')
             axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
             axs[idx].legend().set_visible(False)
@@ -89,3 +93,33 @@ class ContinuousSeries:
         x = list(df.index)
         y = df[self.__value_column][resampled_sub_col].astype(np.float64)
         return x, y
+
+    def plot_z_score_normalised_resampled_series(self):
+        width = 20
+        height = 20
+        number_of_plots = len(self.resampled_series)
+
+        plt.rcParams.update({'font.size': 15})
+        fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height))
+
+        title = 'Resampled Time Series z-score of mean. Resample rule: ' \
+                + self.__resample_rule \
+                + ' , min consecutive days of data: ' \
+                + str(self.__min_days_of_data)
+        fig.suptitle(title)
+
+        for idx, df in enumerate(self.resampled_series):
+            # multi index column
+            y = df[(self.__value_column, self.z_score_col_name)]
+            axs[idx].plot(df.index, y, marker='o',
+                          label=self.z_score_col_name)  # plot with time as index
+            axs[idx].set_xlabel('')
+            axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
+            axs[idx].legend().set_visible(False)
+
+        lines, labels = fig.axes[-1].get_legend_handles_labels()
+        fig.legend(lines, labels)
+        fig.supxlabel(self.__time_column)
+        fig.supylabel(self.__value_column)
+        fig.tight_layout(pad=2)
+        plt.show()

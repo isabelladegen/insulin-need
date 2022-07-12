@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import stumpy
 from matplotlib import pyplot as plt
+from scipy.stats import stats
 
 
 class MatrixProfile:
@@ -14,6 +15,7 @@ class MatrixProfile:
         self.mp = stumpy.stump(self.__values, self.__motif_length_m)  # true matrix profile
         self.__x_mp = self.__index[:self.mp.shape[0]]  # the last m+1 dates are missing as |mp|=|T|-m+1
         self.__motif_index_sorted = np.argsort(self.mp[:, 0])  # create array of indexes sorted by lowest distance first
+        self.__z_score_normalised_values = stats.zscore(values_series)
 
     def get_motif_and_nearest_neighbor_idx_for_xth_motif(self, x: int = 0):
         motif_idx = self.__motif_index_sorted[x]
@@ -51,10 +53,11 @@ class MatrixProfile:
         print(f'Nearest neighbour start date is: {nearest_neighbor_start_date_str}')
 
     # if x is zero it will be the motif with the lowest distance
-    def plot_ts_motif_and_profile(self, x: int, ts_y_label: str, overall_x_label: str):
+    def plot_ts_motif_and_profile(self, x: int, ts_y_label: str, overall_x_label: str, show_z_score_normalised=False):
         plt.rcParams['figure.figsize'] = (20, 15)
-        fig, axs = plt.subplots(2, sharex=True)
+        fig, axs = plt.subplots(3 if show_z_score_normalised else 2, sharex=True)
         plt.rcParams.update({'font.size': 20})
+        mp_ax_idx = 2 if show_z_score_normalised else 1
 
         motif_idx, nearest_neighbor_idx = self.get_motif_and_nearest_neighbor_idx_for_xth_motif(x)
 
@@ -68,24 +71,33 @@ class MatrixProfile:
             + str(self.get_distance_for_motif(motif_idx))
         )
 
-        axs[0].plot(self.__index, self.__values, marker='o')  # plot with time as index
-        axs[0].set_ylabel(ts_y_label)
-        # highlight the motive with the lowest distance
-        axs[0].plot(self.__index[motif_idx:motif_idx + self.__motif_length_m],
-                    self.__values[motif_idx:motif_idx + self.__motif_length_m],
-                    linewidth=3, marker='o')
-        axs[0].plot(self.__index[nearest_neighbor_idx:nearest_neighbor_idx + self.__motif_length_m],
-                    self.__values[nearest_neighbor_idx:nearest_neighbor_idx + self.__motif_length_m],
-                    linewidth=3, marker='o')
-        axs[0].axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
-        axs[0].axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
-        axs[1].plot(self.__x_mp, self.mp[:, 0], marker='o')
-        axs[1].set_ylabel('Matrix Profile')
-        axs[1].axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
-        axs[1].axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
+        self.__plot_motif_on_series(self.__values, axs[0], motif_idx, nearest_neighbor_idx, ts_y_label)
+
+        if show_z_score_normalised:
+            self.__plot_motif_on_series(self.__z_score_normalised_values, axs[1], motif_idx, nearest_neighbor_idx,
+                                        'z-score normalised')
+
+        # show mp
+        axs[mp_ax_idx].plot(self.__x_mp, self.mp[:, 0], marker='o')
+        axs[mp_ax_idx].set_ylabel('Matrix Profile')
+        axs[mp_ax_idx].axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
+        axs[mp_ax_idx].axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
         plt.tight_layout()
         plt.xlabel(overall_x_label)
         plt.show()
+
+    def __plot_motif_on_series(self, values, axs, motif_idx, nearest_neighbor_idx, ts_y_label):
+        axs.plot(self.__index, values, marker='o')  # plot with time as index
+        axs.set_ylabel(ts_y_label)
+        # highlight the motive with the lowest distance
+        axs.plot(self.__index[motif_idx:motif_idx + self.__motif_length_m],
+                 values[motif_idx:motif_idx + self.__motif_length_m],
+                 linewidth=3, marker='o')
+        axs.plot(self.__index[nearest_neighbor_idx:nearest_neighbor_idx + self.__motif_length_m],
+                 values[nearest_neighbor_idx:nearest_neighbor_idx + self.__motif_length_m],
+                 linewidth=3, marker='o')
+        axs.axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
+        axs.axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
 
     # returns index of the matrix profile for the motif that is the least similar to anywhere else - a discord
     def least_similar_x(self):

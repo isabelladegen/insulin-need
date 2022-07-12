@@ -49,6 +49,13 @@ def test_can_show_matrix_profile_plot():
     mp.plot_ts_motif_and_profile(0, 'TS Y label', 'Time')
 
 
+def test_shows_z_score_normalised_values_as_well_matrix_profile_plot():
+    motif_length = 4
+    mp = MatrixProfile(times, values, motif_length)
+    # there is no assert as this test actually plots the graph, it will throw an exception if something is amiss
+    mp.plot_ts_motif_and_profile(0, 'TS Y label', 'Time', True)
+
+
 def test_returns_x_for_discord_area():
     motif_length = 7
     mp = MatrixProfile(times, values, motif_length)
