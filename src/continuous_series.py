@@ -152,17 +152,18 @@ class ContinuousSeries:
                                aggfunc=aggfunc)
         return pivot
 
-    def plot_heathmap_resampled(self, aggfunc=np.mean, resample_col=cs_mean_col_name):
+    def plot_heathmap_resampled(self, aggfunc=np.mean, resample_col=cs_mean_col_name, ax=None):
         y_axis = 'Day of week'
         x_axis = 'Month'
         pivot = self.resampled_df_for_day_of_week_month(resample_col, x_axis, y_axis, aggfunc)
-        self.__plot_heatmap(aggfunc, pivot, resample_col)
+        self.__plot_heatmap(aggfunc, pivot, resample_col, ax)
 
-    def __plot_heatmap(self, aggfunc, pivot, resample_col):
+    def __plot_heatmap(self, aggfunc, pivot, resample_col, ax):
         plt.rcParams['figure.dpi'] = 150
         ax = sns.heatmap(pivot, linewidth=0.5,
                          yticklabels=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                         square=False)
+                         square=False, ax=ax)
+        sns.set(font_scale=1)
         title = 'TS ' \
                 + resample_col \
                 + ' aggregated using ' \
