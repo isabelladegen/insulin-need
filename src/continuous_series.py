@@ -9,11 +9,12 @@ from matplotlib import pyplot as plt, ticker
 from src.preprocess import number_of_interval_in_days, continuous_subseries
 from src.resample import resample_df, z_score_normalise
 
+cs_std_col_name = 'std'
+cs_mean_col_name = 'mean'
+cs_z_score_col_name = 'z-score'
+
 
 class ContinuousSeries:
-    std_col_name = 'std'
-    mean_col_name = 'mean'
-    z_score_col_name = 'z-score'
 
     def __init__(self, df: pd.DataFrame,
                  min_days_of_data: int,
@@ -39,8 +40,8 @@ class ContinuousSeries:
         result = []
         for group in self.subseries:
             ts = resample_df(group, self.__resample_rule, self.__time_column, self.__value_column)
-            ts = z_score_normalise(ts, (self.__value_column, self.mean_col_name),
-                                   (self.__value_column, self.z_score_col_name))
+            ts = z_score_normalise(ts, (self.__value_column, cs_mean_col_name),
+                                   (self.__value_column, cs_z_score_col_name))
             result.append(ts)
         return result
 
@@ -71,16 +72,16 @@ class ContinuousSeries:
         for idx, df in enumerate(self.resampled_series):
             # multi index column
             y = df[self.__value_column]
-            std = y[self.std_col_name]
-            mean = y[self.mean_col_name]
+            std = y[cs_std_col_name]
+            mean = y[cs_mean_col_name]
             columns_to_plot_as_lines = list(y.columns)
-            columns_to_plot_as_lines.remove(self.std_col_name)
-            columns_to_plot_as_lines.remove(self.mean_col_name)
-            columns_to_plot_as_lines.remove(self.z_score_col_name)
+            columns_to_plot_as_lines.remove(cs_std_col_name)
+            columns_to_plot_as_lines.remove(cs_mean_col_name)
+            columns_to_plot_as_lines.remove(cs_z_score_col_name)
             y = y[columns_to_plot_as_lines]
             axs[idx].plot(df.index, y, marker='o',
                           label=columns_to_plot_as_lines)  # plot with time as index
-            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=self.mean_col_name)
+            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=cs_mean_col_name)
             axs[idx].set_xlabel('')
             axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
             axs[idx].legend().set_visible(False)
@@ -114,9 +115,9 @@ class ContinuousSeries:
 
         for idx, df in enumerate(self.resampled_series):
             # multi index column
-            y = df[(self.__value_column, self.z_score_col_name)]
+            y = df[(self.__value_column, cs_z_score_col_name)]
             axs[idx].plot(df.index, y, marker='o',
-                          label=self.z_score_col_name)  # plot with time as index
+                          label=cs_z_score_col_name)  # plot with time as index
             axs[idx].set_xlabel('')
             axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
             axs[idx].legend().set_visible(False)
@@ -128,11 +129,8 @@ class ContinuousSeries:
         fig.tight_layout(pad=2)
         plt.show()
 
-    def plot_heathmap_resampled(self):
-        y_axis = 'Day of week'
-        x_axis = 'Month'
+    def resampled_df_for_day_of_week_month(self, resample_col: str, x_axis: str, y_axis: str, aggfunc):
         data = None
-        # build one big dataframe of all the subseries
         for df in self.resampled_series:
             new_df = df.copy()
             new_df.columns = new_df.columns.droplevel()
@@ -144,37 +142,35 @@ class ContinuousSeries:
                 data = new_df
             else:
                 data = pd.concat([data, new_df])
-        plt.rcParams['figure.dpi'] = 300
-        data = data[[y_axis, self.mean_col_name, x_axis]]
-        data[self.mean_col_name] = data[self.mean_col_name].astype(np.float64)
+
+        data = data[[y_axis, resample_col, x_axis]]
+        data[resample_col] = data[resample_col].astype(np.float64)
         pivot = pd.pivot_table(data=data,
                                index=y_axis,
-                               values=self.mean_col_name,
+                               values=resample_col,
                                columns=x_axis,
-                               aggfunc=np.mean)
-        # aggfunc=lambda x: self.some_magic(x))
+                               aggfunc=aggfunc)
+        return pivot
 
-        sns.set(font_scale=1.3)
+    def plot_heathmap_resampled(self, aggfunc=np.mean, resample_col=cs_mean_col_name):
+        y_axis = 'Day of week'
+        x_axis = 'Month'
+        pivot = self.resampled_df_for_day_of_week_month(resample_col, x_axis, y_axis, aggfunc)
+        self.__plot_heatmap(aggfunc, pivot, resample_col)
+
+    def __plot_heatmap(self, aggfunc, pivot, resample_col):
+        plt.rcParams['figure.dpi'] = 150
         ax = sns.heatmap(pivot, linewidth=0.5,
                          yticklabels=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                          square=False)
-        title = 'Resampled Time Series aggregated mean ' \
+        title = 'TS ' \
+                + resample_col \
+                + ' aggregated using ' \
+                + aggfunc.__name__ + ' ' \
                 + self.__value_column \
                 + '. \n Resample rule: ' \
                 + self.__resample_rule \
                 + ' , min consecutive days of data: ' \
                 + str(self.__min_days_of_data)
         ax.set_title(title, pad=10)
-        plt.gcf().set_size_inches(10, 10)
         plt.show()
-
-# def some_magic(self, x):
-#     print(x)
-#     return x.count()
-
-# def calulate_week_of_month(self, dt):
-#     first_day = dt.replace(day=1)
-#     dom = dt.day
-#     adjusted_dom = dom + (1 + first_day.weekday()) % 7
-#
-#     return int(ceil(adjusted_dom / 7.0))

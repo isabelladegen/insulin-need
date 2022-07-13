@@ -1,17 +1,14 @@
-# create fake timeseries
 from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
 from hamcrest import *
 
-from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries
-from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
-from src.read import read_flat_device_status_df_from_file
 from tests.helper.BgDfBuilder import create_time_stamps
 
+# build fake data
 max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every two hours
 min_days_of_data = 30  # how many days of consecutive readings with at least a reading every interval
 sample_rule = '1D'
@@ -22,11 +19,13 @@ times1 = create_time_stamps(start_date1, min_series_length, max_interval)
 times2 = create_time_stamps(start_date2, 2 * min_series_length, max_interval)
 values1 = list(np.random.uniform(low=0.1, high=14.6, size=min_series_length))
 values2 = list(np.random.uniform(low=0.5, high=10.6, size=2 * min_series_length))
+values3 = list(np.random.uniform(low=90, high=400, size=min_series_length + 2 * min_series_length))
 time_col = 't'
 value_col = 'v'
+value_col2 = 'another col'
 times = times1 + times2
 values = values1 + values2
-df = pd.DataFrame(data={time_col: times, value_col: values})
+df = pd.DataFrame(data={time_col: times, value_col: values, value_col2: values3})
 
 
 def test_plots_resampled_sub_series():
@@ -34,9 +33,14 @@ def test_plots_resampled_sub_series():
     # no asserts as it generates a plot
     series.plot_resampled_series()
 
+def test_describes_series():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col2, sample_rule)
+    series.describe()
+
+
 
 def test_returns_index_and_value_column_for_resampled_value():
-    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col2, sample_rule)
 
     index = -1
     col = 'mean'
@@ -46,7 +50,7 @@ def test_returns_index_and_value_column_for_resampled_value():
     assert_that(len(x), is_(resampled_df.shape[0]))
     assert_that(len(y), is_(resampled_df.shape[0]))
     assert_that(x, is_(list(resampled_df.index)))
-    assert_that(y.equals(resampled_df[value_col][col].astype(np.float64)))
+    assert_that(y.equals(resampled_df[value_col2][col].astype(np.float64)))
 
 
 def test_plots_resampled_z_score_normalised_value():
@@ -60,7 +64,6 @@ def test_plots_heatmap_of_sum_of_values():
 
     # no asserts as it generates a plot
     series.plot_heathmap_resampled()
-
 
 # def test_temp():
 #     zip_id = '14092221'
