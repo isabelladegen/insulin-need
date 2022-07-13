@@ -144,7 +144,7 @@ class ContinuousSeries:
                 data = new_df
             else:
                 data = pd.concat([data, new_df])
-
+        plt.rcParams['figure.dpi'] = 300
         data = data[[y_axis, self.mean_col_name, x_axis]]
         data[self.mean_col_name] = data[self.mean_col_name].astype(np.float64)
         pivot = pd.pivot_table(data=data,
@@ -154,11 +154,19 @@ class ContinuousSeries:
                                aggfunc=np.mean)
         # aggfunc=lambda x: self.some_magic(x))
 
-        ax = sns.heatmap(pivot, linewidth=0.5)
-        ax.set(title="Heatmap of mean values")
-
+        sns.set(font_scale=1.3)
+        ax = sns.heatmap(pivot, linewidth=0.5,
+                         yticklabels=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                         square=False)
+        title = 'Resampled Time Series aggregated mean ' \
+                + self.__value_column \
+                + '. \n Resample rule: ' \
+                + self.__resample_rule \
+                + ' , min consecutive days of data: ' \
+                + str(self.__min_days_of_data)
+        ax.set_title(title, pad=10)
+        plt.gcf().set_size_inches(10, 10)
         plt.show()
-
 
 # def some_magic(self, x):
 #     print(x)
