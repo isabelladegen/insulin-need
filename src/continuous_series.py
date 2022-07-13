@@ -52,8 +52,12 @@ class ContinuousSeries:
         print(f'Max gap between readings {self.__max_interval_between_readings} minutes')
         print(f'Minimum consecutive days of data is {self.__min_days_of_data}')
         print(f'Resampling rule: {self.__resample_rule}')
-        print(f'Number data points in continuous series: {[s.shape[0] for s in self.subseries]}')
-        print(f'Number data points in resampled series: {[s.shape[0] for s in self.resampled_series]}')
+        points_in_cont_series = [s.shape[0] for s in self.subseries]
+        print(f'Number data points in continuous series: {points_in_cont_series}')
+        print(f'Total number of data points in continuous series: {sum(points_in_cont_series)}')
+        points_in_resampled_series = [s.shape[0] for s in self.resampled_series]
+        print(f'Number data points in resampled series: {points_in_resampled_series}')
+        print(f'Total number of resampled data points: {sum(points_in_resampled_series)}')
 
     def plot_resampled_series(self):
         width = 20
