@@ -12,6 +12,7 @@ from src.resample import resample_df, z_score_normalise
 cs_std_col_name = 'std'
 cs_mean_col_name = 'mean'
 cs_z_score_col_name = 'z-score'
+months = range(1, 13)
 
 
 class ContinuousSeries:
@@ -35,6 +36,7 @@ class ContinuousSeries:
                                               self.__time_column, self.__value_column)
         self.__resample_rule = resample_rule
         self.resampled_series = self.__resample()
+        self.data_points_resampled = [s.shape[0] for s in self.resampled_series]
 
     def __resample(self):
         result = []
@@ -55,9 +57,8 @@ class ContinuousSeries:
         points_in_cont_series = [s.shape[0] for s in self.subseries]
         print(f'Number data points in continuous series: {points_in_cont_series}')
         print(f'Total number of data points in continuous series: {sum(points_in_cont_series)}')
-        points_in_resampled_series = [s.shape[0] for s in self.resampled_series]
-        print(f'Number data points in resampled series: {points_in_resampled_series}')
-        print(f'Total number of resampled data points: {sum(points_in_resampled_series)}')
+        print(f'Number data points in resampled series: {self.data_points_resampled}')
+        print(f'Total number of resampled data points: {sum(self.data_points_resampled)}')
 
     def plot_resampled_series(self):
         width = 20
@@ -133,7 +134,8 @@ class ContinuousSeries:
         fig.tight_layout(pad=2)
         plt.show()
 
-    def resampled_df_for_day_of_week_month(self, resample_col: str, x_axis: str, y_axis: str, aggfunc):
+    # resample_col= min, max, mean, std, z-score
+    def pivot_df_for_day_of_week_month(self, resample_col: str, x_axis: str, y_axis: str, aggfunc):
         data = None
         for df in self.resampled_series:
             new_df = df.copy()
@@ -148,25 +150,38 @@ class ContinuousSeries:
                 data = pd.concat([data, new_df])
 
         data = data[[y_axis, resample_col, x_axis]]
+        assert len(data[y_axis].unique()) == 7, \
+            "Not all weekdays have data, pivot will mess up the weekdays due to index numbering"
         data[resample_col] = data[resample_col].astype(np.float64)
         pivot = pd.pivot_table(data=data,
                                index=y_axis,
                                values=resample_col,
                                columns=x_axis,
                                aggfunc=aggfunc)
+
+        # add months that were not in data
+        existing_columns = list(pivot.columns)
+        missing_months = list(set(months) - set(existing_columns))
+        for missing_month in missing_months:
+            pivot[missing_month] = np.NAN
+
+        # sort columns
+        pivot = pivot.reindex(sorted(pivot.columns), axis=1)
         return pivot
 
     def plot_heathmap_resampled(self, aggfunc=np.mean, resample_col=cs_mean_col_name, ax=None):
         y_axis = 'Day of week'
         x_axis = 'Month'
-        pivot = self.resampled_df_for_day_of_week_month(resample_col, x_axis, y_axis, aggfunc)
+        pivot = self.pivot_df_for_day_of_week_month(resample_col, x_axis, y_axis, aggfunc)
         self.__plot_heatmap(aggfunc, pivot, resample_col, ax)
 
     def __plot_heatmap(self, aggfunc, pivot, resample_col, ax):
         plt.rcParams['figure.dpi'] = 150
         ax = sns.heatmap(pivot, linewidth=0.5,
                          yticklabels=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                         square=False, ax=ax)
+                         square=False,
+                         ax=ax,
+                         cmap="mako")
         sns.set(font_scale=1)
         title = 'TS ' \
                 + resample_col \

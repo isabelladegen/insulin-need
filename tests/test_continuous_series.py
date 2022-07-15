@@ -1,11 +1,16 @@
+import os
 from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
+import pytest
 from hamcrest import *
 
+from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries
+from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
+from src.read import read_flat_device_status_df_from_file
 from tests.helper.BgDfBuilder import create_time_stamps
 
 # build fake data
@@ -33,10 +38,10 @@ def test_plots_resampled_sub_series():
     # no asserts as it generates a plot
     series.plot_resampled_series()
 
+
 def test_describes_series():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col2, sample_rule)
     series.describe()
-
 
 
 def test_returns_index_and_value_column_for_resampled_value():
@@ -65,14 +70,27 @@ def test_plots_heatmap_of_sum_of_values():
     # no asserts as it generates a plot
     series.plot_heathmap_resampled()
 
-# def test_temp():
-#     zip_id = '14092221'
-#     max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
-#     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
-#     sample_rule = '1D'  # the frequency of the regular time series after resampling
-#     time_col = 'openaps/enacted/timestamp'
-#     value_col = 'openaps/enacted/IOB'
-#     file = device_status_file_path_for('../data/perid', zip_id)
-#     full_df = read_flat_device_status_df_from_file(file, Configuration())
-#     series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
-#     series.plot_heathmap_resampled()
+
+def test_pivot_table_contains_all_columns_in_order():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    pivot = series.pivot_df_for_day_of_week_month('mean', 'bla', 'blu', np.mean)
+
+    assert_that(pivot.shape, is_((7, 12)))
+    assert_that(list(pivot.columns), contains_exactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), pivot.columns)
+    assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_continuous_series_real_data():
+    zip_id = '14092221'
+    max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
+    min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
+    sample_rule = '1D'  # the frequency of the regular time series after resampling
+    time_col = 'openaps/enacted/timestamp'
+    value_col = 'openaps/enacted/IOB'
+    file = device_status_file_path_for('../data/perid', zip_id)
+    full_df = read_flat_device_status_df_from_file(file, Configuration())
+    series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    assert_that(series.resampled_series)
