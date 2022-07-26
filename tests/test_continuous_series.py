@@ -7,7 +7,7 @@ import pytest
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.continuous_series import ContinuousSeries
+from src.continuous_series import ContinuousSeries, Resolution
 from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
 from src.read import read_flat_device_status_df_from_file
@@ -64,20 +64,41 @@ def test_plots_resampled_z_score_normalised_value():
     series.plot_z_score_normalised_resampled_series()
 
 
-def test_plots_heatmap_of_sum_of_values():
+def test_plots_heatmap_of_min_of_values_for_days_of_weeks_months():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     # no asserts as it generates a plot
-    series.plot_heathmap_resampled()
+    series.plot_heatmap_resampled(resolution=Resolution.DaysMonths, aggfunc=np.mean,
+                                  resample_col='min')
 
 
-def test_pivot_table_contains_all_columns_in_order():
+def test_plots_heatmap_of_mean_of_values_for_days_of_weeks_hours():
+    series = ContinuousSeries(df, 1, max_interval, time_col, value_col, "1H")
+
+    # no asserts as it generates a plot
+    series.plot_heatmap_resampled(resolution=Resolution.DaysHours, aggfunc=np.mean,
+                                  resample_col='mean')
+
+
+def test_pivot_table_contains_all_columns_for_day_of_week_and_months_in_order():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
-    pivot = series.pivot_df_for_day_of_week_month('mean', 'bla', 'blu', np.mean)
+    pivot = series.pivot_df_for_day_of_week_month('mean', np.mean)
 
     assert_that(pivot.shape, is_((7, 12)))
     assert_that(list(pivot.columns), contains_exactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), pivot.columns)
+    assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
+
+
+def test_pivot_table_contains_all_columns_for_day_of_week_and_hours_in_order():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, "1H")
+
+    pivot = series.pivot_df_for_day_of_week_and_hours('mean', np.mean)
+
+    assert_that(pivot.shape, is_((7, 24)))
+    assert_that(list(pivot.columns),
+                contains_exactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23),
+                pivot.columns)
     assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
 
 

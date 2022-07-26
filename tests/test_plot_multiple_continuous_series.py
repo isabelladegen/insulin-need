@@ -37,4 +37,11 @@ def test_plots_heathmap_for_each_zip_id_and_value_column():
     ids = ['57176789', '13484299']
     mcs = MultipleContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
     # no asserts as just for plotting
-    mcs.plot_heathmaps()
+    mcs.plot_heatmaps()
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+def test_plots_totals_heathmap_for_each_zip_id_and_value_column():
+    ids = ['57176789', '13484299']
+    mcs = MultipleContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
+    # no asserts as just for plotting
+    mcs.plot_total_months_heatmaps()

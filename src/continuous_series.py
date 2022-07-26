@@ -5,14 +5,23 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, ticker
+from enum import Enum
 
 from src.preprocess import number_of_interval_in_days, continuous_subseries
 from src.resample import resample_df, z_score_normalise
+
+
+class Resolution(Enum):
+    DaysMonths = 1
+    DaysHours = 2
+
 
 cs_std_col_name = 'std'
 cs_mean_col_name = 'mean'
 cs_z_score_col_name = 'z-score'
 months = range(1, 13)
+hours = range(0, 24)
+days_of_week = range(0,7)
 
 
 class ContinuousSeries:
@@ -135,13 +144,14 @@ class ContinuousSeries:
         plt.show()
 
     # resample_col= min, max, mean, std, z-score
-    def pivot_df_for_day_of_week_month(self, resample_col: str, x_axis: str, y_axis: str, aggfunc):
+    def pivot_df_for_day_of_week_month(self, resample_col: str, aggfunc):
+        y_axis = 'Day of week'
+        x_axis = 'Month'
         data = None
         for df in self.resampled_series:
             new_df = df.copy()
             new_df.columns = new_df.columns.droplevel()
             new_df[y_axis] = new_df.index.dayofweek
-            # new_df[self.week_of_month] = pd.Series(new_df.index).apply(lambda d: self.calulate_week_of_month(d)).values
             new_df[x_axis] = new_df.index.month
 
             if data is None:
@@ -149,48 +159,79 @@ class ContinuousSeries:
             else:
                 data = pd.concat([data, new_df])
 
-        data = data[[y_axis, resample_col, x_axis]]
-        assert len(data[y_axis].unique()) == 7, \
-            "Not all weekdays have data, pivot will mess up the weekdays due to index numbering"
-        data[resample_col] = data[resample_col].astype(np.float64)
+        return self.__pivot_data(aggfunc, data, resample_col, x_axis, y_axis, months)
+
+    def pivot_df_for_day_of_week_and_hours(self, resample_col: str, aggfunc):
+        y_axis = 'Day of week'
+        x_axis = 'Hour'
+        data = None
+        for df in self.resampled_series:
+            new_df = df.copy()
+            new_df.columns = new_df.columns.droplevel()
+            new_df[y_axis] = new_df.index.dayofweek
+            new_df[x_axis] = new_df.index.hour
+
+            if data is None:
+                data = new_df
+            else:
+                data = pd.concat([data, new_df])
+
+        return self.__pivot_data(aggfunc, data, resample_col, x_axis, y_axis, hours)
+
+    def __pivot_data(self, aggfunc, data, resample_col, x_axis, y_axis, expected_columns):
+        data = data[[y_axis, resample_col, x_axis]].copy()
+
+        # change to float
+        data[resample_col] = data[resample_col].astype(np.float64, copy=False)
         pivot = pd.pivot_table(data=data,
                                index=y_axis,
                                values=resample_col,
                                columns=x_axis,
                                aggfunc=aggfunc)
 
-        # add months that were not in data
+        # insert expected_columns that are missing in columns
         existing_columns = list(pivot.columns)
-        missing_months = list(set(months) - set(existing_columns))
-        for missing_month in missing_months:
-            pivot[missing_month] = np.NAN
+        missing_columns = list(set(expected_columns) - set(existing_columns))
+        for missing_column in missing_columns:
+            pivot[missing_column] = np.NAN
+
+        # insert expected_rows that are missing in rows
+        existing_rows = list(pivot.index)
+        missing_rows = list(set(days_of_week)-set(existing_rows))
+        for missing_row in missing_rows:
+            pivot.loc[missing_row] = np.NAN
 
         # sort columns
         pivot = pivot.reindex(sorted(pivot.columns), axis=1)
+        # sort rows
+        pivot.sort_index(inplace=True)
         return pivot
 
-    def plot_heathmap_resampled(self, aggfunc=np.mean, resample_col=cs_mean_col_name, ax=None):
-        y_axis = 'Day of week'
-        x_axis = 'Month'
-        pivot = self.pivot_df_for_day_of_week_month(resample_col, x_axis, y_axis, aggfunc)
-        self.__plot_heatmap(aggfunc, pivot, resample_col, ax)
+    def plot_heatmap_resampled(self, resolution: Resolution, aggfunc=np.mean, resample_col=cs_mean_col_name):
+        pivot_function = self.get_pivot_function(resolution)
+        pivot = pivot_function(resample_col, aggfunc)
+        self.__plot_heatmap(aggfunc, pivot, resample_col)
 
-    def __plot_heatmap(self, aggfunc, pivot, resample_col, ax):
+    def __plot_heatmap(self, aggfunc, pivot, resample_col):
         plt.rcParams['figure.dpi'] = 150
         ax = sns.heatmap(pivot, linewidth=0.5,
                          yticklabels=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                          square=False,
-                         ax=ax,
                          cmap="mako")
         sns.set(font_scale=1)
-        title = 'TS ' \
-                + resample_col \
-                + ' aggregated using ' \
-                + aggfunc.__name__ + ' ' \
+        title = resample_col + ' ' \
                 + self.__value_column \
-                + '. \n Resample rule: ' \
+                + ' aggregated using ' \
+                + aggfunc.__name__ \
+                + '\n Resample rule: ' \
                 + self.__resample_rule \
-                + ' , min consecutive days of data: ' \
+                + ', min consecutive days of data: ' \
                 + str(self.__min_days_of_data)
         ax.set_title(title, pad=10)
         plt.show()
+
+    def get_pivot_function(self, resolution: Resolution):
+        if resolution is Resolution.DaysMonths:
+            return getattr(self, 'pivot_df_for_day_of_week_month')
+        if resolution is Resolution.DaysHours:
+            return getattr(self, 'pivot_df_for_day_of_week_and_hours')
