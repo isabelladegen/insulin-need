@@ -17,6 +17,7 @@ dependencies:
   - pytest
   - pyhamcrest
   - plotly
+  - tslearn # not available on M1
 #  - sktime   # gives conflicts -> move to pip
 #  - tsfresh # gives conflicts -> move to pip
   - pip
