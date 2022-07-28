@@ -21,7 +21,7 @@ cs_mean_col_name = 'mean'
 cs_z_score_col_name = 'z-score'
 months = range(1, 13)
 hours = range(0, 24)
-days_of_week = range(0,7)
+days_of_week = range(0, 7)
 
 
 class ContinuousSeries:
@@ -197,7 +197,7 @@ class ContinuousSeries:
 
         # insert expected_rows that are missing in rows
         existing_rows = list(pivot.index)
-        missing_rows = list(set(days_of_week)-set(existing_rows))
+        missing_rows = list(set(days_of_week) - set(existing_rows))
         for missing_row in missing_rows:
             pivot.loc[missing_row] = np.NAN
 
@@ -211,6 +211,25 @@ class ContinuousSeries:
         pivot_function = self.get_pivot_function(resolution)
         pivot = pivot_function(resample_col, aggfunc)
         self.__plot_heatmap(aggfunc, pivot, resample_col)
+
+    def plot_clustered_heatmap_resampled(self, resolution, aggfunc, resample_col):
+        pivot_function = self.get_pivot_function(resolution)
+        pivot = pivot_function(resample_col, aggfunc)
+
+        plt.rcParams['figure.dpi'] = 150
+        ax = sns.clustermap(pivot,
+                            cmap="mako")
+        sns.set(font_scale=1)
+        title = resample_col + ' ' \
+                + self.__value_column \
+                + ' aggregated using ' \
+                + aggfunc.__name__ \
+                + '\n Resample rule: ' \
+                + self.__resample_rule \
+                + ', min consecutive days of data: ' \
+                + str(self.__min_days_of_data)
+        ax.set_title(title, pad=10)
+        plt.show()
 
     def __plot_heatmap(self, aggfunc, pivot, resample_col):
         plt.rcParams['figure.dpi'] = 150

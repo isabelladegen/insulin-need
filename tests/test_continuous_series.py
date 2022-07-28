@@ -80,6 +80,14 @@ def test_plots_heatmap_of_mean_of_values_for_days_of_weeks_hours():
                                   resample_col='mean')
 
 
+def test_plots_clustered_heathmap_of_mean_values_for_days_of_weeks_and_months():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    # no asserts as it generates a plot
+    series.plot_clustered_heatmap_resampled(resolution=Resolution.DaysMonths, aggfunc=np.mean,
+                                            resample_col='mean')
+
+
 def test_pivot_table_contains_all_columns_for_day_of_week_and_months_in_order():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
