@@ -110,7 +110,7 @@ def test_pivot_table_contains_all_columns_for_day_of_week_and_hours_in_order():
     assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
 
 
-@pytest.mark.skipif(not os.path.isdir('../data/perid'), reason="reads real data")
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_continuous_series_real_data():
     zip_id = '14092221'
     max_interval = 60  # how frequent readings need per day, 60=every hour, 180=every three hours

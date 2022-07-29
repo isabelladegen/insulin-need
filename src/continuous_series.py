@@ -265,26 +265,40 @@ class ContinuousSeries:
 
     def as_x_train(self, column: str):
         """Convert resampled ts into 3d ndarray of regular equal length TS.
-         Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
 
                 Parameters
                 ----------
                 column : Cols
                     Which resample value to use
 
+                Returns
+                _______
+                X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
         """
+        filtered_df = self.resampled_daily_series_df(column)
+        result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
+        return result
+
+    def resampled_daily_series_df(self, column):
+        """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
+
+                       Parameters
+                       ----------
+                       column : Cols
+                           Which resample value to use
+
+                       Returns
+                       _______
+                       filtered df of combined resampled ts with each date having 24 readings
+               """
         # Combine all resampled ts into one df
         df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
         df.sort_index(inplace=True)
-
         # Dates that have 24 readings for equal lenght time periods
         df_for_col = df[column]
         dates = df_for_col.groupby(by=df.index.date).count()
         dates = dates.where(dates == 24).dropna()
-
         # Drop dates for which we don't have 24 readings
         filtered_df = df_for_col[np.isin(df_for_col.index.date, dates.index)]
-
         # to numpy array, reshape to number of dates, readings per day, dimension
-        result = filtered_df.to_numpy().reshape(dates.count(), 24, 1)
-        return result
+        return filtered_df

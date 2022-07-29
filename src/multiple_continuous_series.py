@@ -1,3 +1,5 @@
+import operator
+
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -149,3 +151,42 @@ class MultipleContinuousSeries:
 
         fig.tight_layout()
         plt.show()
+
+    def as_dictionary_of_x_train(self, column: str):
+        """Convert resampled IOB, COB and BG ts into 3d ndarray of regular, equal length TS for each zip id.
+            Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=3
+
+               Parameters
+               ----------
+               column : Cols
+                   Which resample value to use
+
+        """
+        result = {}
+        for zip_id, value_columns in self.continuous_series.items():
+            # get all three series IOB, COB and BG
+            combined_daily_ts_dfs = []
+            for series in value_columns.values():
+                combined_daily_ts_dfs.append(series.resampled_daily_series_df(column))
+
+            # ensure all three ts have the same dates
+            # find dates that are common across the different features
+            dates = [set(x.index.date) for x in combined_daily_ts_dfs]
+            common_dates = None
+            for idx in range(len(dates)-1):
+                if common_dates is None:
+                    common_dates = dates[idx].intersection(dates[idx+1])
+                else:
+                    common_dates = common_dates.intersection(dates[idx+1])
+
+            # filter each df to only contain data for the common dates
+            filtered_dfs = [df[np.isin(df.index.date, list(common_dates))] for df in combined_daily_ts_dfs]
+
+            # convert into 3d numpy array
+            variates = [df.to_numpy().reshape(len(common_dates), 24, 1) for df in filtered_dfs]
+
+            # stack 3d numpy array for adding each variate along third dimension
+            result[zip_id] = np.dstack(tuple(variates))
+            # reset for next iteration
+            combined_daily_ts_dfs = []
+        return result
