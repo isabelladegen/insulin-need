@@ -16,6 +16,14 @@ class Resolution(Enum):
     DaysHours = 2
 
 
+class Cols(str, Enum):
+    Mean = 'mean'
+    Std = 'std'
+    Z_score = 'z-score'
+    Min = 'min'
+    Max = 'max'
+
+
 cs_std_col_name = 'std'
 cs_mean_col_name = 'mean'
 cs_z_score_col_name = 'z-score'
@@ -254,3 +262,29 @@ class ContinuousSeries:
             return getattr(self, 'pivot_df_for_day_of_week_month')
         if resolution is Resolution.DaysHours:
             return getattr(self, 'pivot_df_for_day_of_week_and_hours')
+
+    def as_x_train(self, column: str):
+        """Convert resampled ts into 3d ndarray of regular equal length TS.
+         Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
+
+                Parameters
+                ----------
+                column : Cols
+                    Which resample value to use
+
+        """
+        # Combine all resampled ts into one df
+        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
+        df.sort_index(inplace=True)
+
+        # Dates that have 24 readings for equal lenght time periods
+        df_for_col = df[column]
+        dates = df_for_col.groupby(by=df.index.date).count()
+        dates = dates.where(dates == 24).dropna()
+
+        # Drop dates for which we don't have 24 readings
+        filtered_df = df_for_col[np.isin(df_for_col.index.date, dates.index)]
+
+        # to numpy array, reshape to number of dates, readings per day, dimension
+        result = filtered_df.to_numpy().reshape(dates.count(), 24, 1)
+        return result

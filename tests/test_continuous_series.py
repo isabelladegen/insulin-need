@@ -7,7 +7,7 @@ import pytest
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.continuous_series import ContinuousSeries, Resolution
+from src.continuous_series import ContinuousSeries, Resolution, Cols
 from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
 from src.read import read_flat_device_status_df_from_file
@@ -110,16 +110,19 @@ def test_pivot_table_contains_all_columns_for_day_of_week_and_hours_in_order():
     assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
 
 
-@pytest.mark.skipif(not os.path.isdir(Configuration().data_dir), reason="reads real data")
+@pytest.mark.skipif(not os.path.isdir('../data/perid'), reason="reads real data")
 def test_continuous_series_real_data():
     zip_id = '14092221'
-    max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
+    max_interval = 60  # how frequent readings need per day, 60=every hour, 180=every three hours
     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
-    sample_rule = '1D'  # the frequency of the regular time series after resampling
+    sample_rule = '1H'  # the frequency of the regular time series after resampling
     time_col = 'openaps/enacted/timestamp'
     value_col = 'openaps/enacted/IOB'
     file = device_status_file_path_for('../data/perid', zip_id)
     full_df = read_flat_device_status_df_from_file(file, Configuration())
     series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
-    assert_that(series.resampled_series)
+    # reshape as daily ts
+    X_train = series.as_x_train(Cols.Mean)
+
+    assert_that(X_train.shape, is_((312, 24, 1)))  # number of days, 24 readings per day, 1 dimension
