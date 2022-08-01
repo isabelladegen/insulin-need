@@ -61,7 +61,7 @@ class MultipleContinuousSeries:
         fig, axes = plt.subplots(nrows=len(self.__value_columns),
                                  ncols=len(self.continuous_series),
                                  sharey=True,
-                                 sharex=True,
+                                 sharex=True,squeeze=0,
                                  figsize=(10, 7))
         y_axis = 'Day of week'
         x_axis = MultipleContinuousSeries.x_axis_name_lookup[resolution]
@@ -70,7 +70,10 @@ class MultipleContinuousSeries:
                 + '\n Preproc: Resample rule: ' \
                 + self.__resample_rule \
                 + ' , min consecutive days of data: ' \
-                + str(self.__min_days_of_data)
+                + str(self.__min_days_of_data) \
+                + ', at least on reading every ' \
+                + str(self.__max_interval_between_readings) \
+                + 'min'
         fig.suptitle(title)
         fig.supxlabel('Different People')
         fig.supylabel('Different Time Series')
@@ -110,14 +113,16 @@ class MultipleContinuousSeries:
                                  sharey=True,
                                  sharex=True,
                                  figsize=(10, 7))
-        x_axis = 'Months'
-        y_axis = 'Day of week'
+
         weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         title = 'TS total mean values per Weekday accross all months' \
                 + '\n Resample rule: ' \
                 + self.__resample_rule \
                 + ' , min consecutive days of data: ' \
-                + str(self.__min_days_of_data)
+                + str(self.__min_days_of_data) \
+                + ', at least on reading every ' \
+                + str(self.__max_interval_between_readings) \
+                + 'min'
         fig.suptitle(title)
 
         vmins = {'openaps/enacted/IOB': 0.0, 'openaps/enacted/COB': 0.0, 'openaps/enacted/bg': 50.0}
