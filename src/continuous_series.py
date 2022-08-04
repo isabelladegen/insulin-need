@@ -266,14 +266,15 @@ class ContinuousSeries:
     def as_x_train(self, column: str):
         """Convert resampled ts into 3d ndarray of regular equal length TS.
 
-                Parameters
-                ----------
-                column : Cols
-                    Which resample value to use
+        Parameters
+        ----------
+        column : Cols
+            Which resample value to use
 
-                Returns
-                _______
-                X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
+        Returns
+        -------
+        numpy array
+            X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
         """
         filtered_df = self.resampled_daily_series_df(column)
         result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
@@ -282,19 +283,20 @@ class ContinuousSeries:
     def resampled_daily_series_df(self, column):
         """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
 
-                       Parameters
-                       ----------
-                       column : Cols
-                           Which resample value to use
+        Parameters
+        ----------
+        column : Cols
+           Which resample value to use
 
-                       Returns
-                       _______
-                       filtered df of combined resampled ts with each date having 24 readings
-               """
+        Returns
+        -------
+        pandas Dataframe
+            filtered df of combined resampled ts with each date having 24 readings
+        """
         # Combine all resampled ts into one df
         df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
         df.sort_index(inplace=True)
-        # Dates that have 24 readings for equal lenght time periods
+        # Dates that have 24 readings for equal length time periods
         df_for_col = df[column]
         dates = df_for_col.groupby(by=df.index.date).count()
         dates = dates.where(dates == 24).dropna()
