@@ -4,7 +4,7 @@ import pytest
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.continuous_series import Cols
+from src.continuous_series import Cols, Resolution
 from src.multiple_continuous_series import MultipleContinuousSeries
 
 zip_ids = ['57176789', '13484299', '86025410']
@@ -39,13 +39,22 @@ def test_plots_heathmap_for_each_zip_id_and_value_column():
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
-def test_calculates_x_train_for_zipids():
+def test_calculates_x_train_daily_for_zipids():
     ids = ['14092221', '13484299']
     mcs = MultipleContinuousSeries(ids, 1, 60, time_col, value_columns, "1H")
-    x_trains = mcs.as_dictionary_of_x_train(Cols.Mean)
+    x_trains = mcs.as_dictionary_of_x_train_daily(Cols.Mean)
 
     assert_that(x_trains[ids[0]].shape, is_((304, 24, 3)))
     assert_that(x_trains[ids[1]].shape, is_((15, 24, 3)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_calculates_x_train_for_zipids_weekly():
+    ids = ['14092221']
+    mcs = MultipleContinuousSeries(ids, 1, 180, time_col, value_columns, "1D")
+    x_trains = mcs.as_dictionary_of_x_train_weekly(Cols.Mean)
+
+    assert_that(x_trains[ids[0]].shape, is_((58, 7, 3)))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")

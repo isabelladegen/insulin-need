@@ -1,6 +1,7 @@
 import operator
 
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
@@ -61,7 +62,7 @@ class MultipleContinuousSeries:
         fig, axes = plt.subplots(nrows=len(self.__value_columns),
                                  ncols=len(self.continuous_series),
                                  sharey=True,
-                                 sharex=True,squeeze=0,
+                                 sharex=True, squeeze=0,
                                  figsize=(10, 7))
         y_axis = 'Day of week'
         x_axis = MultipleContinuousSeries.x_axis_name_lookup[resolution]
@@ -157,7 +158,7 @@ class MultipleContinuousSeries:
         fig.tight_layout()
         plt.show()
 
-    def as_dictionary_of_x_train(self, column: str):
+    def as_dictionary_of_x_train_daily(self, column: str):
         """Convert resampled IOB, COB and BG ts into 3d ndarray of regular, equal length TS for each zip id.
             Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=3
 
@@ -165,12 +166,11 @@ class MultipleContinuousSeries:
                ----------
                column : Cols
                    Which resample value to use
-
         """
         result = {}
         for zip_id, value_columns in self.continuous_series.items():
-            # get all three series IOB, COB and BG
             combined_daily_ts_dfs = []
+            # get all three series IOB, COB and BG
             for series in value_columns.values():
                 combined_daily_ts_dfs.append(series.resampled_daily_series_df(column))
 
@@ -178,11 +178,11 @@ class MultipleContinuousSeries:
             # find dates that are common across the different features
             dates = [set(x.index.date) for x in combined_daily_ts_dfs]
             common_dates = None
-            for idx in range(len(dates)-1):
+            for idx in range(len(dates) - 1):
                 if common_dates is None:
-                    common_dates = dates[idx].intersection(dates[idx+1])
+                    common_dates = dates[idx].intersection(dates[idx + 1])
                 else:
-                    common_dates = common_dates.intersection(dates[idx+1])
+                    common_dates = common_dates.intersection(dates[idx + 1])
 
             # filter each df to only contain data for the common dates
             filtered_dfs = [df[np.isin(df.index.date, list(common_dates))] for df in combined_daily_ts_dfs]
@@ -194,4 +194,46 @@ class MultipleContinuousSeries:
             result[zip_id] = np.dstack(tuple(variates))
             # reset for next iteration
             combined_daily_ts_dfs = []
+        return result
+
+    def as_dictionary_of_x_train_weekly(self, column: str):
+        """Convert resampled IOB, COB and BG ts into 3d ndarray of regular, equal length TS for each zip id.
+            Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of weeks, sz is 7, and d=3
+
+               Parameters
+               ----------
+               column : Cols
+                   Which resample value to use
+        """
+        result = {}
+        for zip_id, value_columns in self.continuous_series.items():
+            combined_weekly_ts_dfs = []
+            # get all three series IOB, COB and BG
+            for series in value_columns.values():
+                combined_weekly_ts_dfs.append(series.resampled_weekly_series_df(column))
+
+            # ensure all three ts have the same weeks
+            # find weeks that are common across the different features
+            year_weeks_for_each_df = [set(zip(df.index.year, df.index.week)) for df in combined_weekly_ts_dfs]
+            common_weeks = None
+            for idx, year_weeks in enumerate(year_weeks_for_each_df):
+                if idx+1 == len(year_weeks_for_each_df):
+                    break
+                next_set = year_weeks_for_each_df[idx + 1]
+                if common_weeks is None:
+                    common_weeks = year_weeks_for_each_df[idx].intersection(next_set)
+                else:
+                    common_weeks = common_weeks.intersection(next_set)
+
+            # filter each df to only contain data for the common weeks
+            filtered_dfs = [df[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(
+                list(common_weeks))] for df in combined_weekly_ts_dfs]
+
+            # convert into 3d numpy array
+            variates = [df.to_numpy().reshape(len(common_weeks), 7, 1) for df in filtered_dfs]
+
+            # stack 3d numpy array for adding each variate along third dimension
+            result[zip_id] = np.dstack(tuple(variates))
+            # reset for next iteration
+            combined_weekly_ts_dfs = []
         return result

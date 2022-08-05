@@ -284,26 +284,21 @@ class ContinuousSeries:
             or 7 (depending on length of ts), and d=1
         """
         # Combine all resampled ts into one df
-        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
-        df.sort_index(inplace=True)
         if length_of_ts == Resolution.Day:
-            filtered_df = self.resampled_daily_series_df(df, column)
+            filtered_df = self.resampled_daily_series_df(column)
             result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
             return result
         if length_of_ts == Resolution.Week:
-            filtered_df = self.resampled_weekly_series_df(df, column)
+            filtered_df = self.resampled_weekly_series_df(column)
             number_of_weeks = len(filtered_df.groupby(by=[filtered_df.index.year, filtered_df.index.week]).count())
             result = filtered_df.to_numpy().reshape(number_of_weeks, 7, 1)
             return result
 
-    def resampled_daily_series_df(self, df: pandas.DataFrame, column):
+    def resampled_daily_series_df(self, column):
         """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
 
         Parameters
         ----------
-        df : pd.DataFrame
-            df to put into daily series
-
         column : str
            Which resample value to use
 
@@ -312,7 +307,8 @@ class ContinuousSeries:
         pandas Dataframe
             filtered df of combined resampled ts with each date having 24 readings
         """
-
+        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
+        df.sort_index(inplace=True)
         # Dates that have 24 readings for equal length time periods
         df_for_col = df[column]
         dates = df_for_col.groupby(by=df.index.date).count()
@@ -321,14 +317,11 @@ class ContinuousSeries:
         filtered_df = df_for_col[np.isin(df_for_col.index.date, dates.index)]
         return filtered_df
 
-    def resampled_weekly_series_df(self, df: pandas.DataFrame, column: str):
+    def resampled_weekly_series_df(self, column: str):
         """Converts resampled ts into combined df of weekly series, only keeping the weeks with a reading per day
 
         Parameters
         ----------
-        df : pd.DataFrame
-            df to put into weekly series
-
         column : str
            Which resample value to use
 
@@ -337,7 +330,8 @@ class ContinuousSeries:
         pandas Dataframe
             filtered df of combined resampled ts with each date having a daily reading for each weekday
         """
-
+        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
+        df.sort_index(inplace=True)
         df_for_col = df[column]
         # count how many days of data each week in each year has
         years_weeks = df_for_col.groupby(by=[df.index.year, df.index.week]).count()
