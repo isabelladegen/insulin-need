@@ -2,6 +2,7 @@ from calendar import calendar
 from math import ceil
 
 import numpy as np
+import pandas
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, ticker
@@ -14,6 +15,8 @@ from src.resample import resample_df, z_score_normalise
 class Resolution(Enum):
     DaysMonths = 1
     DaysHours = 2
+    Day = 3
+    Week = 4
 
 
 class Cols(str, Enum):
@@ -263,7 +266,7 @@ class ContinuousSeries:
         if resolution is Resolution.DaysHours:
             return getattr(self, 'pivot_df_for_day_of_week_and_hours')
 
-    def as_x_train(self, column: str):
+    def as_x_train(self, column: str, length_of_ts=Resolution.Day):
         """Convert resampled ts into 3d ndarray of regular equal length TS.
 
         Parameters
@@ -271,21 +274,37 @@ class ContinuousSeries:
         column : Cols
             Which resample value to use
 
+        length_of_ts : Resolution
+            How long the regular TS will be
+
         Returns
         -------
         numpy array
-            X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=1
+            X_train of shape=(n_ts, sz, d), where n_ts is number of days or weeks (depending on length_of_ts), sz is 24
+            or 7 (depending on length of ts), and d=1
         """
-        filtered_df = self.resampled_daily_series_df(column)
-        result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
-        return result
+        # Combine all resampled ts into one df
+        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
+        df.sort_index(inplace=True)
+        if length_of_ts == Resolution.Day:
+            filtered_df = self.resampled_daily_series_df(df, column)
+            result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
+            return result
+        if length_of_ts == Resolution.Week:
+            filtered_df = self.resampled_weekly_series_df(df, column)
+            number_of_weeks = len(filtered_df.groupby(by=[filtered_df.index.year, filtered_df.index.week]).count())
+            result = filtered_df.to_numpy().reshape(number_of_weeks, 7, 1)
+            return result
 
-    def resampled_daily_series_df(self, column):
+    def resampled_daily_series_df(self, df: pandas.DataFrame, column):
         """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
 
         Parameters
         ----------
-        column : Cols
+        df : pd.DataFrame
+            df to put into daily series
+
+        column : str
            Which resample value to use
 
         Returns
@@ -293,14 +312,39 @@ class ContinuousSeries:
         pandas Dataframe
             filtered df of combined resampled ts with each date having 24 readings
         """
-        # Combine all resampled ts into one df
-        df = pd.concat(self.resampled_series).droplevel(level=0, axis=1)
-        df.sort_index(inplace=True)
+
         # Dates that have 24 readings for equal length time periods
         df_for_col = df[column]
         dates = df_for_col.groupby(by=df.index.date).count()
         dates = dates.where(dates == 24).dropna()
         # Drop dates for which we don't have 24 readings
         filtered_df = df_for_col[np.isin(df_for_col.index.date, dates.index)]
-        # to numpy array, reshape to number of dates, readings per day, dimension
+        return filtered_df
+
+    def resampled_weekly_series_df(self, df: pandas.DataFrame, column: str):
+        """Converts resampled ts into combined df of weekly series, only keeping the weeks with a reading per day
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            df to put into weekly series
+
+        column : str
+           Which resample value to use
+
+        Returns
+        -------
+        pandas Dataframe
+            filtered df of combined resampled ts with each date having a daily reading for each weekday
+        """
+
+        df_for_col = df[column]
+        # count how many days of data each week in each year has
+        years_weeks = df_for_col.groupby(by=[df.index.year, df.index.week]).count()
+
+        # Drop years_week for which we don't have 7 readings, one per day
+        years_weeks = years_weeks.where(years_weeks == 7).dropna()
+
+        # drop the rows where the year/week is not in the years_weeks index
+        filtered_df = df_for_col[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(list(years_weeks.index.to_flat_index()))]
         return filtered_df
