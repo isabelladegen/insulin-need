@@ -223,25 +223,6 @@ class ContinuousSeries:
         pivot = pivot_function(resample_col, aggfunc)
         self.__plot_heatmap(aggfunc, pivot, resample_col)
 
-    def plot_clustered_heatmap_resampled(self, resolution, aggfunc, resample_col):
-        pivot_function = self.get_pivot_function(resolution)
-        pivot = pivot_function(resample_col, aggfunc)
-
-        plt.rcParams['figure.dpi'] = 150
-        ax = sns.clustermap(pivot,
-                            cmap="mako")
-        sns.set(font_scale=1)
-        title = resample_col + ' ' \
-                + self.__value_column \
-                + ' aggregated using ' \
-                + aggfunc.__name__ \
-                + '\n Resample rule: ' \
-                + self.__resample_rule \
-                + ', min consecutive days of data: ' \
-                + str(self.__min_days_of_data)
-        ax.set_title(title, pad=10)
-        plt.show()
-
     def __plot_heatmap(self, aggfunc, pivot, resample_col):
         plt.rcParams['figure.dpi'] = 150
         ax = sns.heatmap(pivot, linewidth=0.5,
@@ -340,5 +321,6 @@ class ContinuousSeries:
         years_weeks = years_weeks.where(years_weeks == 7).dropna()
 
         # drop the rows where the year/week is not in the years_weeks index
-        filtered_df = df_for_col[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(list(years_weeks.index.to_flat_index()))]
+        filtered_df = df_for_col[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(
+            list(years_weeks.index.to_flat_index()))]
         return filtered_df
