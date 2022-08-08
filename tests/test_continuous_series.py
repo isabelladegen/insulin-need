@@ -7,7 +7,7 @@ import pytest
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.continuous_series import ContinuousSeries, Resolution, Cols
+from src.continuous_series import ContinuousSeries, Resolution, Cols, TimeFeatures
 from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
 from src.read import read_flat_device_status_df_from_file
@@ -100,6 +100,32 @@ def test_pivot_table_contains_all_columns_for_day_of_week_and_hours_in_order():
                 contains_exactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23),
                 pivot.columns)
     assert_that(list(pivot.index), contains_exactly(0, 1, 2, 3, 4, 5, 6), pivot.index)
+
+
+def test_returns_2d_df_for_tabular_k_means():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, "1H")
+
+    x_col = TimeFeatures.month_of_year
+    y_col = Cols.Mean
+    tabular_df = series.as_tabular_x_train(x=x_col, y=y_col)
+
+    assert_that(tabular_df.shape, is_((2156, 2)))
+    assert_that(len(tabular_df[x_col]), is_(2156))
+    assert_that(len(tabular_df[y_col]), is_(2156))
+
+
+def test_returns_3d_df_for_tabular_k_means():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, "1H")
+
+    x_col = TimeFeatures.month_of_year
+    y_col = TimeFeatures.day_of_week
+    z_col = Cols.Mean
+    tabular_df = series.as_tabular_x_train(x=x_col, y=y_col, z=z_col)
+
+    assert_that(tabular_df.shape, is_((2156, 3)))
+    assert_that(len(tabular_df[x_col]), is_(2156))
+    assert_that(len(tabular_df[y_col]), is_(2156))
+    assert_that(len(tabular_df[z_col]), is_(2156))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
