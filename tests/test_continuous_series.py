@@ -18,8 +18,8 @@ max_interval = 180  # how frequent readings need per day, 60=every hour, 180=eve
 min_days_of_data = 30  # how many days of consecutive readings with at least a reading every interval
 sample_rule = '1D'
 min_series_length = number_of_interval_in_days(min_days_of_data, max_interval)
-start_date1 = datetime(year=2019, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
-start_date2 = datetime(year=2021, month=1, day=3, hour=1, minute=0, tzinfo=timezone.utc)
+start_date1 = datetime(year=2019, month=12, day=25, hour=0, minute=0, tzinfo=timezone.utc)
+start_date2 = datetime(year=2021, month=1, day=3, hour=0, minute=0, tzinfo=timezone.utc)
 times1 = create_time_stamps(start_date1, min_series_length, max_interval)
 times2 = create_time_stamps(start_date2, 2 * min_series_length, max_interval)
 values1 = list(np.random.uniform(low=0.1, high=14.6, size=min_series_length))
@@ -126,39 +126,3 @@ def test_returns_3d_df_for_tabular_k_means():
     assert_that(len(tabular_df[x_col]), is_(2156))
     assert_that(len(tabular_df[y_col]), is_(2156))
     assert_that(len(tabular_df[z_col]), is_(2156))
-
-
-@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
-def test_continuous_series_real_data_daily_x_train():
-    zip_id = '14092221'
-    max_interval = 60  # how frequent readings need per day, 60=every hour, 180=every three hours
-    min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
-    sample_rule = '1H'  # the frequency of the regular time series after resampling
-    time_col = 'openaps/enacted/timestamp'
-    value_col = 'openaps/enacted/IOB'
-    file = device_status_file_path_for(Configuration().perid_data_folder, zip_id)
-    full_df = read_flat_device_status_df_from_file(file, Configuration())
-    series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
-
-    # reshape as daily ts
-    X_train = series.as_x_train(Cols.Mean)
-
-    assert_that(X_train.shape, is_((312, 24, 1)))  # number of days, 24 readings per day, 1 dimension
-
-
-@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
-def test_continuous_series_real_data_weekly_x_train():
-    zip_id = '14092221'
-    max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
-    min_days_of_data = 7  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
-    sample_rule = '1D'  # the frequency of the regular time series after resampling
-    time_col = 'openaps/enacted/timestamp'
-    value_col = 'openaps/enacted/IOB'
-    file = device_status_file_path_for(Configuration().perid_data_folder, zip_id)
-    full_df = read_flat_device_status_df_from_file(file, Configuration())
-    series = ContinuousSeries(full_df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
-
-    # reshape as daily ts
-    x_train = series.as_x_train(Cols.Mean, Resolution.Week)
-
-    assert_that(x_train.shape, is_((53, 7, 1)))  # number of weeks, 7 day in a week, 1 dimension

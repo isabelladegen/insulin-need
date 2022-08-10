@@ -1,3 +1,4 @@
+import pandas as pd
 from datetime import timedelta
 
 from src.configurations import Configuration
@@ -43,7 +44,8 @@ def number_of_interval_in_days(days, minute_interval):
     return int(days * 24 * 60 / minute_interval)
 
 
-# splits df into smaller dfs of items that are sampled at interval and there's at least min_length continuous intervals
+# splits df into smaller dfs of datetimes that have at least frequency interval_in_min and are of min_length full
+# days of data
 # if value_col is provided than nan's in value col will be dropped to keep the frequency for time and value columns
 def continuous_subseries(df, min_length, interval_in_min, time_col, value_col: str = None):
     # group original df into groups that are sampled at least more than the given interval
@@ -53,6 +55,7 @@ def continuous_subseries(df, min_length, interval_in_min, time_col, value_col: s
 
     # get list of group numbers where the value count is at least min_length
     # downsample each group to the interval required, then count the values
+    daily_min_length = 24 * 60 / interval_in_min
 
     result = []
     for group_idx in grouped_df['group'].unique():
@@ -62,6 +65,22 @@ def continuous_subseries(df, min_length, interval_in_min, time_col, value_col: s
             continue
         # resample the group to remove more frequent readings
         resampled = group_sub_df.resample(str(interval_in_min) + 'min', on=time_col).first()
+
+        # drop start and end days that don't have a full min_length of data
+        earliest_date = resampled[time_col].min().date()
+        rows_for_first_day = resampled.loc[pd.to_datetime(resampled[time_col]).dt.date == earliest_date]
+        if len(rows_for_first_day) < daily_min_length:  # not a full day of data
+            resampled = pd.concat([resampled, rows_for_first_day]).drop_duplicates(keep=False)
+            # drop that date from the originally sampled grouped df too
+            group_sub_df = group_sub_df.drop(group_sub_df[pd.to_datetime(group_sub_df[time_col]).dt.date == earliest_date].index)
+
+        latest_date = resampled[time_col].max().date()
+        rows_for_last_day = resampled.loc[pd.to_datetime(resampled[time_col]).dt.date == latest_date]
+        if len(rows_for_last_day) < daily_min_length:  # not a full day of data
+            resampled = pd.concat([resampled, rows_for_last_day]).drop_duplicates(keep=False)
+            # drop that date from the originally sampled grouped df too
+            group_sub_df = group_sub_df.drop(group_sub_df[pd.to_datetime(group_sub_df[time_col]).dt.date == latest_date].index)
+
         # skip groups only have enough samples due to being more frequent than interval
         if resampled.shape[0] < min_length:
             continue

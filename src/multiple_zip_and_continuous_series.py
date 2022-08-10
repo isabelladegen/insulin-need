@@ -1,5 +1,3 @@
-import operator
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -11,7 +9,11 @@ from src.helper import device_status_file_path_for
 from src.read import read_flat_device_status_df_from_file
 
 
-class MultipleContinuousSeries:
+# this class should have been designed into two different one for dealing with multivariate series and one for dealing
+# with multiple zips
+# Instead of refactoring it all the multiple series will be created, the zips not yet but this slowly will become
+# redundant
+class MultipleZipAndContinuousSeries:
     x_axis_name_lookup = {Resolution.DaysMonths: 'Month',
                           Resolution.DaysHours: 'Hour'
                           }
@@ -65,7 +67,7 @@ class MultipleContinuousSeries:
                                  sharex=True, squeeze=0,
                                  figsize=(10, 7))
         y_axis = 'Day of week'
-        x_axis = MultipleContinuousSeries.x_axis_name_lookup[resolution]
+        x_axis = MultipleZipAndContinuousSeries.x_axis_name_lookup[resolution]
 
         title = 'Mean values, heatmaps: x=' + x_axis + ' y=Day of Week' \
                 + '\n Preproc: Resample rule: ' \
@@ -81,12 +83,14 @@ class MultipleContinuousSeries:
 
         for column_idx, (zip_id, value_columns) in enumerate(self.continuous_series.items()):
             for row_idx, (col_name, series) in enumerate(value_columns.items()):
-                pivot_table = getattr(series, MultipleContinuousSeries.pivot_function[resolution])('mean', np.mean)
-                vmin = MultipleContinuousSeries.vmins[col_name] if col_name in MultipleContinuousSeries.vmins.keys() \
+                pivot_table = getattr(series, MultipleZipAndContinuousSeries.pivot_function[resolution])('mean',
+                                                                                                         np.mean)
+                vmin = MultipleZipAndContinuousSeries.vmins[
+                    col_name] if col_name in MultipleZipAndContinuousSeries.vmins.keys() \
                     else 0.0
                 ax = sns.heatmap(pivot_table,
                                  linewidth=0.5,
-                                 yticklabels=MultipleContinuousSeries.weekdays,
+                                 yticklabels=MultipleZipAndContinuousSeries.weekdays,
                                  square=False,
                                  vmin=vmin,
                                  ax=axes[row_idx][column_idx],
@@ -157,83 +161,3 @@ class MultipleContinuousSeries:
 
         fig.tight_layout()
         plt.show()
-
-    def as_dictionary_of_x_train_daily(self, column: str):
-        """Convert resampled IOB, COB and BG ts into 3d ndarray of regular, equal length TS for each zip id.
-            Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and d=3
-
-               Parameters
-               ----------
-               column : Cols
-                   Which resample value to use
-        """
-        result = {}
-        for zip_id, value_columns in self.continuous_series.items():
-            combined_daily_ts_dfs = []
-            # get all three series IOB, COB and BG
-            for series in value_columns.values():
-                combined_daily_ts_dfs.append(series.resampled_daily_series_df(column))
-
-            # ensure all three ts have the same dates
-            # find dates that are common across the different features
-            dates = [set(x.index.date) for x in combined_daily_ts_dfs]
-            common_dates = None
-            for idx in range(len(dates) - 1):
-                if common_dates is None:
-                    common_dates = dates[idx].intersection(dates[idx + 1])
-                else:
-                    common_dates = common_dates.intersection(dates[idx + 1])
-
-            # filter each df to only contain data for the common dates
-            filtered_dfs = [df[np.isin(df.index.date, list(common_dates))] for df in combined_daily_ts_dfs]
-
-            # convert into 3d numpy array
-            variates = [df.to_numpy().reshape(len(common_dates), 24, 1) for df in filtered_dfs]
-
-            # stack 3d numpy array for adding each variate along third dimension
-            result[zip_id] = np.dstack(tuple(variates))
-            # reset for next iteration
-            combined_daily_ts_dfs = []
-        return result
-
-    def as_dictionary_of_x_train_weekly(self, column: str):
-        """Convert resampled IOB, COB and BG ts into 3d ndarray of regular, equal length TS for each zip id.
-            Resulting X_train of shape=(n_ts, sz, d), where n_ts is number of weeks, sz is 7, and d=3
-
-               Parameters
-               ----------
-               column : Cols
-                   Which resample value to use
-        """
-        result = {}
-        for zip_id, value_columns in self.continuous_series.items():
-            combined_weekly_ts_dfs = []
-            # get all three series IOB, COB and BG
-            for series in value_columns.values():
-                combined_weekly_ts_dfs.append(series.resampled_weekly_series_df(column))
-
-            # ensure all three ts have the same weeks
-            # find weeks that are common across the different features
-            year_weeks_for_each_df = [set(zip(df.index.year, df.index.week)) for df in combined_weekly_ts_dfs]
-            common_weeks = None
-            for idx, year_weeks in enumerate(year_weeks_for_each_df):
-                if idx+1 == len(year_weeks_for_each_df):
-                    break
-                next_set = year_weeks_for_each_df[idx + 1]
-                if common_weeks is None:
-                    common_weeks = year_weeks_for_each_df[idx].intersection(next_set)
-                else:
-                    common_weeks = common_weeks.intersection(next_set)
-
-            # filter each df to only contain data for the common weeks
-            filtered_dfs = [df[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(
-                list(common_weeks))] for df in combined_weekly_ts_dfs]
-
-            # convert into 3d numpy array
-            variates = [df.to_numpy().reshape(len(common_weeks), 7, 1) for df in filtered_dfs]
-
-            # stack 3d numpy array for adding each variate along third dimension
-            result[zip_id] = np.dstack(tuple(variates))
-            # reset for next iteration
-            combined_weekly_ts_dfs = []
-        return result

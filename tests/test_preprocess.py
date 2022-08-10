@@ -154,15 +154,15 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
     min_length = number_of_interval_in_days(2, interval)
 
     # build time series
-    date1 = datetime(year=2018, month=12, day=25, hour=12, minute=0, tzinfo=timezone.utc)
+    date1 = datetime(year=2018, month=12, day=25, hour=0, minute=0, tzinfo=timezone.utc)
     date2 = datetime(year=2020, month=3, day=14, hour=6, minute=11, tzinfo=timezone.utc)
     date2_more = date2 + timedelta(minutes=10)
-    date3 = datetime(year=2021, month=8, day=14, hour=6, minute=17, tzinfo=timezone.utc)
+    date3 = datetime(year=2021, month=8, day=14, hour=0, minute=0, tzinfo=timezone.utc)
 
     # Two series sampled at interval i and of at least length min_length
     times1 = create_time_stamps(date1, min_length, interval)
-    times3 = create_time_stamps(date3, min_length + 1, interval)  # this will be longer and be in
-    # One series less than length min_length but with more sample
+    times3 = create_time_stamps(date3, 2*min_length, interval)  # a longer timeseries
+    # One series less than length min_length but with more samples to force frequency test
     times2 = create_time_stamps(date2, min_length - 2, interval)  # this will not be long enough
     times2_more = create_time_stamps(date2_more, min_length - 2, interval)
     times_too_short = times2 + times2_more
@@ -176,6 +176,27 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
     assert_that(len(result), is_(2), "There wasn't 2 continuous sampled sub series")
     assert_that(list(sub_df1[time_col]) == times1)
     assert_that(list(sub_df2[time_col]) == times3)
+
+
+def test_removes_days_that_have_only_partial_data():
+    time_col = 'time'
+    max_gap_in_min = 15  # sampling interval
+    # only keep continuous 15 sampled series for 2 days
+    min_daily_length = number_of_interval_in_days(1, max_gap_in_min)
+    min_length = number_of_interval_in_days(2, max_gap_in_min)
+
+    # build time series
+    partial_start_day = datetime(year=2018, month=12, day=25, hour=23, minute=0, tzinfo=timezone.utc)
+
+    # TS that starts on the 25 but the 25th does not have a full days data and should therefore be excluded
+    times = create_time_stamps(partial_start_day, 3*min_daily_length, max_gap_in_min)
+
+    df = pd.DataFrame(data={time_col: times})
+
+    result = continuous_subseries(df, min_length, max_gap_in_min, time_col)
+
+    assert_that(len(result), is_(1)) # there's  no gap
+    assert_that(result[0].shape[0], is_(min_length)) # removed the dates that didn't have fully sampled data
 
 
 def test_ensures_there_is_a_value_and_time_stamp_at_min_interval():

@@ -4,8 +4,7 @@ import pytest
 from hamcrest import *
 
 from src.configurations import Configuration
-from src.continuous_series import Cols, Resolution
-from src.multiple_continuous_series import MultipleContinuousSeries
+from src.multiple_zip_and_continuous_series import MultipleZipAndContinuousSeries
 
 zip_ids = ['57176789', '13484299', '86025410']
 max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours,
@@ -17,7 +16,7 @@ value_columns = ['openaps/enacted/IOB', 'openaps/enacted/COB', 'openaps/enacted/
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_creates_a_continuous_series_for_all_ids_and_value_columns():
-    mcs = MultipleContinuousSeries(zip_ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
+    mcs = MultipleZipAndContinuousSeries(zip_ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
     result = mcs.continuous_series
 
     # entry for each zip id
@@ -33,33 +32,14 @@ def test_creates_a_continuous_series_for_all_ids_and_value_columns():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_heathmap_for_each_zip_id_and_value_column():
     ids = ['57176789', '13484299']
-    mcs = MultipleContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
+    mcs = MultipleZipAndContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
     # no asserts as just for plotting
     mcs.plot_heatmaps()
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
-def test_calculates_x_train_daily_for_zipids():
-    ids = ['14092221', '13484299']
-    mcs = MultipleContinuousSeries(ids, 1, 60, time_col, value_columns, "1H")
-    x_trains = mcs.as_dictionary_of_x_train_daily(Cols.Mean)
-
-    assert_that(x_trains[ids[0]].shape, is_((304, 24, 3)))
-    assert_that(x_trains[ids[1]].shape, is_((15, 24, 3)))
-
-
-@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
-def test_calculates_x_train_for_zipids_weekly():
-    ids = ['14092221']
-    mcs = MultipleContinuousSeries(ids, 1, 180, time_col, value_columns, "1D")
-    x_trains = mcs.as_dictionary_of_x_train_weekly(Cols.Mean)
-
-    assert_that(x_trains[ids[0]].shape, is_((58, 7, 3)))
-
-
-@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_totals_heathmap_for_each_zip_id_and_value_column():
     ids = ['57176789', '13484299']
-    mcs = MultipleContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
+    mcs = MultipleZipAndContinuousSeries(ids, min_days_of_data, max_interval, time_col, value_columns, sample_rule)
     # no asserts as just for plotting
     mcs.plot_total_months_heatmaps()

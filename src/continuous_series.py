@@ -49,7 +49,7 @@ class ContinuousSeries:
                  time_col: str,
                  value_col: str,
                  resample_rule: str):
-        self.df = df
+        self.df = df[[time_col, value_col]]
         # how frequent readings need to be per day, 60 = once per hour, 180 = every 2 hour, ...
         self.__max_interval_between_readings = max_interval_between_reading
         self.__time_column = time_col  # column that's used for resampling
@@ -92,7 +92,7 @@ class ContinuousSeries:
         number_of_plots = len(self.resampled_series)
 
         plt.rcParams.update({'font.size': 15})
-        fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height))
+        fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height), squeeze=0)
 
         title = 'Resampled Time Series. Resample rule: ' \
                 + self.__resample_rule \
@@ -110,12 +110,12 @@ class ContinuousSeries:
             columns_to_plot_as_lines.remove(cs_mean_col_name)
             columns_to_plot_as_lines.remove(cs_z_score_col_name)
             y = y[columns_to_plot_as_lines]
-            axs[idx].plot(df.index, y, marker='o',
-                          label=columns_to_plot_as_lines)  # plot with time as index
-            axs[idx].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=cs_mean_col_name)
-            axs[idx].set_xlabel('')
-            axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
-            axs[idx].legend().set_visible(False)
+            axs[idx, 0].plot(df.index, y, marker='o',
+                             label=columns_to_plot_as_lines)  # plot with time as index
+            axs[idx, 0].errorbar(df.index, mean, yerr=list(std), fmt='-o', capsize=3, label=cs_mean_col_name)
+            axs[idx, 0].set_xlabel('')
+            axs[idx, 0].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
+            axs[idx, 0].legend().set_visible(False)
 
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         fig.legend(lines, labels)
@@ -136,7 +136,7 @@ class ContinuousSeries:
         number_of_plots = len(self.resampled_series)
 
         plt.rcParams.update({'font.size': 15})
-        fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height))
+        fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height), squeeze=0)
 
         title = 'Resampled Time Series z-score of mean. Resample rule: ' \
                 + self.__resample_rule \
@@ -147,11 +147,11 @@ class ContinuousSeries:
         for idx, df in enumerate(self.resampled_series):
             # multi index column
             y = df[(self.__value_column, cs_z_score_col_name)]
-            axs[idx].plot(df.index, y, marker='o',
-                          label=cs_z_score_col_name)  # plot with time as index
-            axs[idx].set_xlabel('')
-            axs[idx].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
-            axs[idx].legend().set_visible(False)
+            axs[idx, 0].plot(df.index, y, marker='o',
+                             label=cs_z_score_col_name)  # plot with time as index
+            axs[idx, 0].set_xlabel('')
+            axs[idx, 0].yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
+            axs[idx, 0].legend().set_visible(False)
 
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         fig.legend(lines, labels)
@@ -185,34 +185,6 @@ class ContinuousSeries:
             return getattr(self, 'pivot_df_for_day_of_week_month')
         if resolution is Resolution.DaysHours:
             return getattr(self, 'pivot_df_for_day_of_week_and_hours')
-
-    def as_x_train(self, column: str, length_of_ts=Resolution.Day):
-        """Convert resampled ts into 3d ndarray of regular equal length TS.
-
-        Parameters
-        ----------
-        column : Cols
-            Which resample value to use
-
-        length_of_ts : Resolution
-            How long the regular TS will be
-
-        Returns
-        -------
-        numpy array
-            X_train of shape=(n_ts, sz, d), where n_ts is number of days or weeks (depending on length_of_ts), sz is 24
-            or 7 (depending on length of ts), and d=1
-        """
-        # Combine all resampled ts into one df
-        if length_of_ts == Resolution.Day:
-            filtered_df = self.resampled_daily_series_df(column)
-            result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
-            return result
-        if length_of_ts == Resolution.Week:
-            filtered_df = self.resampled_weekly_series_df(column)
-            number_of_weeks = len(filtered_df.groupby(by=[filtered_df.index.year, filtered_df.index.week]).count())
-            result = filtered_df.to_numpy().reshape(number_of_weeks, 7, 1)
-            return result
 
     def resampled_daily_series_df(self, column):
         """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
@@ -254,13 +226,13 @@ class ContinuousSeries:
         df.sort_index(inplace=True)
         df_for_col = df[column]
         # count how many days of data each week in each year has
-        years_weeks = df_for_col.groupby(by=[df.index.year, df.index.week]).count()
+        years_weeks = df_for_col.groupby(by=[df.index.year, df.index.isocalendar().week]).count()
 
         # Drop years_week for which we don't have 7 readings, one per day
         years_weeks = years_weeks.where(years_weeks == 7).dropna()
 
         # drop the rows where the year/week is not in the years_weeks index
-        filtered_df = df_for_col[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.week))).isin(
+        filtered_df = df_for_col[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.isocalendar().week))).isin(
             list(years_weeks.index.to_flat_index()))]
         return filtered_df
 
@@ -315,7 +287,7 @@ class ContinuousSeries:
         ax.set_title(title, pad=10)
         plt.show()
 
-    def __pivot_data(self, aggfunc, data, resample_col, x_axis:str, y_axis:str, expected_columns):
+    def __pivot_data(self, aggfunc, data, resample_col, x_axis: str, y_axis: str, expected_columns):
         data = data[[y_axis, resample_col, x_axis]].copy()
 
         # change to float
