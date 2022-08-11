@@ -7,5 +7,5 @@ def resample_df(df, rule, time_col, sample_col):
 def z_score_normalise(df, col_to_normalise, new_col):
     new_df = df.copy()
     column_to_normalise = df[col_to_normalise]
-    new_df[new_col] = column_to_normalise - column_to_normalise.mean() / column_to_normalise.std()
+    new_df[new_col] = (column_to_normalise - column_to_normalise.mean()) / column_to_normalise.std()
     return new_df
