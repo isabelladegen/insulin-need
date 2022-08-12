@@ -9,6 +9,7 @@ dependencies:
   - datasets
   - numpy
   - matplotlib
+  - seaborn
   - pandas
   - numba>=0.55
   - scikit-learn
