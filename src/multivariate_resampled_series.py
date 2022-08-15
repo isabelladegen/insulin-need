@@ -11,8 +11,8 @@ from src.stats import Sampling
 class TimeColumns:  # Daily TS
     month = 'month'
     year = 'year'
-    time_of_day = 'time of day'
     week_day = 'weekday'
+    hour = 'hours'
 
 
 class MultivariateResampledSeries:
@@ -98,10 +98,10 @@ class MultivariateResampledSeries:
         """
         if self.__multivariate_df_with_time_cols is None:
             df = self.get_multivariate_df().copy()
+            df[TimeColumns.hour] = df.index.hour
             df[TimeColumns.month] = df.index.month
-            df[TimeColumns.year] = df.index.year
-            df[TimeColumns.time_of_day] = df.index.hour
             df[TimeColumns.week_day] = df.index.weekday
+            df[TimeColumns.year] = df.index.year
             self.__multivariate_df_with_time_cols = df
         return self.__multivariate_df_with_time_cols
 
@@ -123,10 +123,10 @@ class MultivariateResampledSeries:
             return self.raw_df.index.month
         if time_format == TimeColumns.year:
             return self.raw_df.index.year
-        if time_format == TimeColumns.time_of_day:
-            return self.raw_df.index.hour
         if time_format == TimeColumns.week_day:
             return self.raw_df.index.weekday
+        if time_format == TimeColumns.hour:
+            return self.raw_df.index.hour
         return None
 
     def get_multivariate_3d_numpy_array(self):
