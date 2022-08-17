@@ -186,6 +186,35 @@ class ContinuousSeries:
         if resolution is Resolution.DaysHours:
             return getattr(self, 'pivot_df_for_day_of_week_and_hours')
 
+    # just used for tests now
+    def as_x_train(self, column: str, length_of_ts=Resolution.Day):
+        """Convert resampled ts into 3d ndarray of regular equal length TS.
+
+        Parameters
+        ----------
+        column : Cols
+            Which resample value to use
+
+        length_of_ts : Resolution
+            How long the regular TS will be
+
+        Returns
+        -------
+        numpy array
+            X_train of shape=(n_ts, sz, d), where n_ts is number of days or weeks (depending on length_of_ts), sz is 24
+            or 7 (depending on length of ts), and d=1
+        """
+        # Combine all resampled ts into one df
+        if length_of_ts == Resolution.Day:
+            filtered_df = self.resampled_daily_series_df(column)
+            result = filtered_df.to_numpy().reshape(len(np.unique(filtered_df.index.date)), 24, 1)
+            return result
+        if length_of_ts == Resolution.Week:
+            filtered_df = self.resampled_weekly_series_df(column)
+            number_of_weeks = len(filtered_df.groupby(by=[filtered_df.index.year, filtered_df.index.week]).count())
+            result = filtered_df.to_numpy().reshape(number_of_weeks, 7, 1)
+            return result
+
     def resampled_daily_series_df(self, column):
         """Converts resampled ts into combined df of daily series, only keeping days with a reading per hour
 

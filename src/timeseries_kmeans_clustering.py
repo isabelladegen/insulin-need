@@ -1,7 +1,50 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+from scipy.spatial.distance import cdist
+from sklearn.metrics import silhouette_samples
 from tslearn.clustering import TimeSeriesKMeans, silhouette_score
+from tslearn.metrics import cdist_soft_dtw_normalized, cdist_dtw
 from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScalerMinMax
+
+from tslearn.utils import to_time_series_dataset, to_time_series
+
+
+# Time series implementation of ts_silhouette_samples
+def ts_silhouette_samples(X, labels, metric=None, metric_params=None, n_jobs=None, verbose=0, **kwds):
+    sklearn_metric = None
+    if metric_params is None:
+        metric_params_ = {}
+    else:
+        metric_params_ = metric_params.copy()
+    for k in kwds.keys():
+        metric_params_[k] = kwds[k]
+    if "n_jobs" in metric_params_.keys():
+        del metric_params_["n_jobs"]
+    if metric == "precomputed":
+        sklearn_X = X
+    elif metric == "dtw" or metric is None:
+        sklearn_X = cdist_dtw(X, n_jobs=n_jobs, verbose=verbose,
+                              **metric_params_)
+    elif metric == "softdtw":
+        sklearn_X = cdist_soft_dtw_normalized(X, **metric_params_)
+    elif metric == "euclidean":
+        X_ = to_time_series_dataset(X)
+        X_ = X_.reshape((X.shape[0], -1))
+        sklearn_X = cdist(X_, X_, metric="euclidean")
+    else:
+        X_ = to_time_series_dataset(X)
+        n, sz, d = X_.shape
+        sklearn_X = X_.reshape((n, -1))
+
+        def sklearn_metric(x, y):
+            return metric(to_time_series(x.reshape((sz, d)),
+                                         remove_nans=True),
+                          to_time_series(y.reshape((sz, d)),
+                                         remove_nans=True))
+    metric = "precomputed" if sklearn_metric is None else sklearn_metric
+
+    return silhouette_samples(sklearn_X, labels, metric=metric, **kwds)
 
 
 class TimeSeriesKMeansClustering:
@@ -106,6 +149,103 @@ class TimeSeriesKMeansClustering:
         plt.tick_params(labelcolor="none", bottom=False, left=False)
         plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
         plt.xlabel("X = hours of day (UTC)")
+
+    def plot_silhouette_blob_for_k(self, ks: [int]):
+        """Plots silhouettes for all given ks
+
+        Parameters
+        ----------
+        ks : [int]
+            all cluster numbers to plot silhouette score for, min list size =4, looks better if len(ks) a
+            multiple of 4
+        """
+        no_clusters = len(ks)
+        no_rows = int(len(ks) / 4)
+        no_cols = 4
+        plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
+        fig_size = (10, 5)  # allow for multicolumn grids and single column grids
+
+        fig, axs = plt.subplots(nrows=no_rows,
+                                ncols=no_cols,
+                                sharey=True,
+                                sharex=True,
+                                figsize=fig_size, squeeze=0)
+        fig.suptitle("Silhouette Analysis. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
+                     + str(len(self.y_pred)))
+
+        current_row_idx = 0
+        current_col_idx = 0
+        for plot_no in range(no_clusters):
+            ax = axs[current_row_idx, current_col_idx]
+            ax.set_xlim([-0.1, 1])
+            # The (n_clusters+1)*10 is for inserting blank space between silhouette
+            # plots of individual clusters, to demarcate them clearly.
+            ax.set_ylim([0, len(self.y_pred) + (no_clusters + 1) * 10])
+
+            # Run Kmeans
+            k = ks[plot_no]
+            model = TimeSeriesKMeans(n_clusters=k, metric=self.__metric, max_iter=self.__max_iter,
+                                     random_state=self.__random_state)
+            y_pred = model.fit_predict(self.__x_train)
+
+            # calculate silhouette score
+            silhouette_avg = silhouette_score(self.__x_train, y_pred, metric=self.__metric)
+            print(
+                "For n_clusters =",
+                k,
+                "The average silhouette_score is :",
+                silhouette_avg,
+            )
+
+            # Compute the silhouette scores for each sample
+            sample_silhouette_values = ts_silhouette_samples(self.__x_train, y_pred)
+
+            y_lower = 10
+            for i in range(k):
+                # Aggregate the silhouette scores for samples belonging to
+                # cluster i, and sort them
+                ith_cluster_silhouette_values = sample_silhouette_values[y_pred == i]
+                ith_cluster_silhouette_values.sort()
+                size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                y_upper = y_lower + size_cluster_i
+
+                color = cm.nipy_spectral(float(i) / no_clusters)
+                ax.fill_betweenx(
+                    np.arange(y_lower, y_upper),
+                    0,
+                    ith_cluster_silhouette_values,
+                    facecolor=color,
+                    edgecolor=color,
+                    alpha=0.7,
+                )
+
+                # Label the silhouette plots with their cluster numbers at the middle
+                ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+
+                # Compute the new y_lower for next plot
+                y_lower = y_upper + 10  # 10 for the 0 samples
+
+            ax.set_title("k=" + str(k))
+
+            # The vertical line for average silhouette score of all the values
+            ax.axvline(x=silhouette_avg, color="red", linestyle="--")
+
+            ax.set_yticks([])  # Clear the yaxis labels / ticks
+            ax.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+            # Update for next plot
+            if current_col_idx == 3:
+                current_col_idx = 0
+                current_row_idx = current_row_idx + 1
+            else:
+                current_col_idx = current_col_idx + 1
+
+        lines, labels = fig.axes[-1].get_legend_handles_labels()
+        fig.legend(lines, labels)
+        fig.supxlabel("Silhouette coefficient values")
+        fig.supylabel("Clusters")
+        fig.tight_layout(pad=1)
+        plt.show()
 
     def plot_mean_silhouette_score_for_k(self, ks: [int]):
         """Plots mean silhouette score for all the given k
