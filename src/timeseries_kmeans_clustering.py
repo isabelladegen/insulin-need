@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from tslearn.clustering import TimeSeriesKMeans, silhouette_score
-from tslearn.preprocessing import TimeSeriesScalerMeanVariance
+from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScalerMinMax
 
 
 class TimeSeriesKMeansClustering:
@@ -16,7 +16,8 @@ class TimeSeriesKMeansClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, n_clusters: int, x_train: np.array, normalise: bool, x_train_column_names: []):
+    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [], x_ticks: [],
+                 scaler=TimeSeriesScalerMinMax()):
         """Collection of convenience function for tslearn k-means.
 
         Parameters
@@ -28,18 +29,23 @@ class TimeSeriesKMeansClustering:
             timeseries to cluster as np.array of shape=(n_ts, sz, d), where n_ts is number of days, sz is 24, and
             d=1 for single variate and > for multivariate ts
 
-        normalise : bool
-            whether to use a scaler on x_train or nt
-
         x_train_column_names: []
             list of ts names in x_train
+
+        x_ticks : [int]
+            x_ticks to be used
+
+        scaler : TimeSeriesScalerMinMax or TimeSeriesScalerMeanVariance or None if no scaling
+            Default is MinMax scaling
         """
         self.__n_clusters = n_clusters
-        self.__normalise = normalise
-        if self.__normalise:
-            self.__x_train = TimeSeriesScalerMeanVariance().fit_transform(x_train)  # normalise data
-        else:
+        self.__x_ticks = x_ticks
+        self.__scaler = scaler
+        if self.__scaler is None:
             self.__x_train = x_train
+        else:
+            # this is really important especially for multivariate TS
+            self.__x_train = self.__scaler.fit_transform(x_train)  # normalise data
         self.__x_train_column_names = x_train_column_names
         self.__metric = "dtw"
         self.__max_iter = 10
@@ -60,15 +66,16 @@ class TimeSeriesKMeansClustering:
         """
         no_clusters = self.model.n_clusters
         no_dimensions = self.model.cluster_centers_.shape[2]
-        plt.rcParams['figure.dpi'] = 150
-        fig_size = (5*no_dimensions, no_clusters * 2)  # allow for multicolumn grids and single column grids
+        plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
+        fig_size = (4 * no_dimensions, no_clusters * 2)  # allow for multicolumn grids and single column grids
 
         fig, axs = plt.subplots(nrows=no_clusters,
                                 ncols=no_dimensions,
                                 sharey=True,
                                 sharex=True,
-                                figsize=fig_size, squeeze=0, facecolor='white')
-        fig.suptitle("DBA k-means. No of TS " + str(len(self.y_pred)))
+                                figsize=fig_size, squeeze=0)
+        fig.suptitle("DBA k-means. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
+                     + str(len(self.y_pred)))
         # clusters are on the rows
         for row_idx in range(no_clusters):
             is_in_cluster_yi = (self.y_pred == row_idx)
@@ -77,7 +84,10 @@ class TimeSeriesKMeansClustering:
             for xx in self.__x_train[is_in_cluster_yi]:
                 # plot the ts for each variate in columns
                 for col_idx in range(no_dimensions):
-                    axs[row_idx, col_idx].plot(xx[:, col_idx].ravel(), 'k-', alpha=.2)
+                    ts = xx[:, col_idx]
+                    axs[row_idx, col_idx].plot(ts.ravel(), 'k-', alpha=.2)
+                    axs[row_idx, col_idx].set_xticks(self.__x_ticks)
+                    axs[row_idx, col_idx].grid(which='major', alpha=0.2, color='grey')
 
             # plot the cluster line and title
             for col_idx in range(no_dimensions):
@@ -88,14 +98,13 @@ class TimeSeriesKMeansClustering:
             # set y label for row with cluster information
             axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()))
 
-        plt.tight_layout()
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
+        plt.subplots_adjust(top=.9)
         # add overall x, y text
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
-        normalised_label_string = " normalised " if self.__normalise else " "
-        plt.ylabel(
-            "Y =" + normalised_label_string + y_label_substr + " values", labelpad=30)
+        plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
         plt.xlabel("X = hours of day (UTC)")
 
     def plot_mean_silhouette_score_for_k(self, ks: [int]):
@@ -108,6 +117,7 @@ class TimeSeriesKMeansClustering:
         """
         silhouette_avg = self.__calculate_mean_silhouette_score_for_ks(ks)
 
+        plt.rcParams.update({'figure.facecolor': 'white'})
         # plot silhouette score
         plt.figure(figsize=(8, 6), dpi=80, facecolor='white')
         plt.plot(ks, silhouette_avg, 'o-')
@@ -128,12 +138,13 @@ class TimeSeriesKMeansClustering:
         squared_distances = self.__calculate_sum_of_squared_distances(ks)
 
         # plot silhouette score
-        plt.figure(figsize=(8, 6), dpi=80, facecolor='white')
+        plt.rcParams.update({'figure.facecolor': 'white'})
+        plt.figure(figsize=(8, 6), dpi=80)
         plt.plot(ks, squared_distances, 'o-')
         plt.xticks(ks)
         plt.xlabel('Values of K')
         plt.ylabel('Sum of squared distances')
-        plt.title('Elbow method for finding optimal k')
+        plt.title('Elbow method for finding optimal k clusterd cols ' + ', '.join(self.__x_train_column_names))
         plt.show()
 
     def __calculate_mean_silhouette_score_for_ks(self, ks: [int]):
