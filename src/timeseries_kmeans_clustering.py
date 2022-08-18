@@ -185,7 +185,8 @@ class TimeSeriesKMeansClustering:
         plt.show()
 
     def plot_barry_centers_in_one_plot(self, y_label_substr):
-        """Plots row for all barry centers in one plot, if x_full given does it for the other cols too
+        """Plots row for all barry centers in one plot, if x_full given does it for the other cols too. Useful to see
+        how similar the barrycenters for the different clusters are
 
         Parameters
         ----------
@@ -239,7 +240,8 @@ class TimeSeriesKMeansClustering:
         plt.show()
 
     def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr):
-        """Plots barrycents with clusters as rows and columns collapsed into one row
+        """Plots barrycenters with clusters as rows and columns collapsed into one row. Useful to see how IOB, COB and BG
+        behave in each cluster
 
         Parameters
         ----------
