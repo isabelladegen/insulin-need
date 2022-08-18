@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 from scipy.spatial.distance import cdist
 from sklearn.metrics import silhouette_samples
+from tslearn.barycenters import dtw_barycenter_averaging
 from tslearn.clustering import TimeSeriesKMeans, silhouette_score
 from tslearn.metrics import cdist_soft_dtw_normalized, cdist_dtw
 from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScalerMinMax
@@ -59,8 +60,8 @@ class TimeSeriesKMeansClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [], x_ticks: [],
-                 scaler=TimeSeriesScalerMinMax()):
+    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], x_ticks: [],
+                 scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None):
         """Collection of convenience function for tslearn k-means.
 
         Parameters
@@ -80,6 +81,14 @@ class TimeSeriesKMeansClustering:
 
         scaler : TimeSeriesScalerMinMax or TimeSeriesScalerMeanVariance or None if no scaling
             Default is MinMax scaling
+
+        x_full : np.array
+            used to plot the other time series that were not used in clustering. e.g if clustered on IOB this would
+            calculate barrycenters for COB and BG and plot them according to where they would fit based on the IOB
+            clustering
+
+        x_full_column_names : []
+            columns for x full to be able to find the right TS in the np.array
         """
         self.__n_clusters = n_clusters
         self.__x_ticks = x_ticks
@@ -93,6 +102,15 @@ class TimeSeriesKMeansClustering:
         self.__metric = "dtw"
         self.__max_iter = 10
         self.__random_state = 66
+
+        if x_full is not None:
+            assert (x_full_column_names is not None)
+            # scale x full in the same way
+            self.__x_full = x_full if self.__scaler is None else self.__scaler.fit_transform(x_full)
+            self.__cols_to_plot = x_full_column_names
+        else:
+            self.__x_full = None
+            self.__cols_to_plot = self.__x_train_column_names
 
         # create clusters
         self.model = TimeSeriesKMeans(n_clusters=self.__n_clusters, metric=self.__metric, max_iter=self.__max_iter,
@@ -108,10 +126,11 @@ class TimeSeriesKMeansClustering:
             Part of the plot y label
         """
         no_clusters = self.model.n_clusters
-        no_dimensions = self.model.cluster_centers_.shape[2]
+        no_dimensions = len(self.__cols_to_plot)
+
+        # setup figure
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
         fig_size = (4 * no_dimensions, no_clusters * 2)  # allow for multicolumn grids and single column grids
-
         fig, axs = plt.subplots(nrows=no_clusters,
                                 ncols=no_dimensions,
                                 sharey=True,
@@ -119,24 +138,38 @@ class TimeSeriesKMeansClustering:
                                 figsize=fig_size, squeeze=0)
         fig.suptitle("DBA k-means. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
                      + str(len(self.y_pred)))
+
         # clusters are on the rows
         for row_idx in range(no_clusters):
             is_in_cluster_yi = (self.y_pred == row_idx)
 
             # plot all the time series for cluster row_idx and all dimensions
-            for xx in self.__x_train[is_in_cluster_yi]:
-                # plot the ts for each variate in columns
-                for col_idx in range(no_dimensions):
+            if self.__x_full is None:  # just plot x train
+                series_in_cluster_yi = self.__x_train[is_in_cluster_yi]
+            else:  # plot x_full
+                series_in_cluster_yi = self.__x_full[is_in_cluster_yi]
+            for xx in series_in_cluster_yi:
+                for col_idx, col in enumerate(self.__cols_to_plot):
                     ts = xx[:, col_idx]
+                    # plot the ts for each variate in columns
                     axs[row_idx, col_idx].plot(ts.ravel(), 'k-', alpha=.2)
-                    axs[row_idx, col_idx].set_xticks(self.__x_ticks)
-                    axs[row_idx, col_idx].grid(which='major', alpha=0.2, color='grey')
 
-            # plot the cluster line and title
-            for col_idx in range(no_dimensions):
-                axs[row_idx, col_idx].plot(self.model.cluster_centers_[row_idx][:, col_idx], "r-")
+            # plot the barrycenter line and title
+            for col_idx, col in enumerate(self.__cols_to_plot):
+                # a column for which the barrycenters has already been calculated for clustering
+                if col in self.__x_train_column_names:
+                    axs[row_idx, col_idx].plot(
+                        self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index(col)], "r-")
+                else:  # calculate barrycenters for the none clustered cols
+                    bc = dtw_barycenter_averaging(series_in_cluster_yi[:, :, col_idx])
+                    axs[row_idx, col_idx].plot(bc.ravel(), "b-")
+
+                axs[row_idx, col_idx].set_xticks(self.__x_ticks)
+                axs[row_idx, col_idx].grid(which='major', alpha=0.2, color='grey')
+
+                # set title for first row
                 if row_idx == 0:
-                    axs[0, col_idx].set_title(self.__x_train_column_names[col_idx])
+                    axs[0, col_idx].set_title(col)
 
             # set y label for row with cluster information
             axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()))
@@ -149,6 +182,7 @@ class TimeSeriesKMeansClustering:
         plt.tick_params(labelcolor="none", bottom=False, left=False)
         plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
         plt.xlabel("X = hours of day (UTC)")
+        plt.show()
 
     def plot_silhouette_blob_for_k(self, ks: [int]):
         """Plots silhouettes for all given ks
@@ -163,6 +197,8 @@ class TimeSeriesKMeansClustering:
         no_rows = int(len(ks) / 4)
         no_cols = 4
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
+        max_k = max(ks)
+        gap = 8
         fig_size = (10, 5)  # allow for multicolumn grids and single column grids
 
         fig, axs = plt.subplots(nrows=no_rows,
@@ -175,12 +211,13 @@ class TimeSeriesKMeansClustering:
 
         current_row_idx = 0
         current_col_idx = 0
+        min_x = -0.2
         for plot_no in range(no_clusters):
             ax = axs[current_row_idx, current_col_idx]
-            ax.set_xlim([-0.1, 1])
-            # The (n_clusters+1)*10 is for inserting blank space between silhouette
+            ax.set_xlim([min_x, 1])
+            # The (n_clusters+1)*gap is for inserting blank space between silhouette
             # plots of individual clusters, to demarcate them clearly.
-            ax.set_ylim([0, len(self.y_pred) + (no_clusters + 1) * 10])
+            ax.set_ylim([0, len(self.y_pred) + (max_k + 1) * gap])
 
             # Run Kmeans
             k = ks[plot_no]
@@ -200,7 +237,7 @@ class TimeSeriesKMeansClustering:
             # Compute the silhouette scores for each sample
             sample_silhouette_values = ts_silhouette_samples(self.__x_train, y_pred)
 
-            y_lower = 10
+            y_lower = gap
             for i in range(k):
                 # Aggregate the silhouette scores for samples belonging to
                 # cluster i, and sort them
@@ -223,7 +260,7 @@ class TimeSeriesKMeansClustering:
                 ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
                 # Compute the new y_lower for next plot
-                y_lower = y_upper + 10  # 10 for the 0 samples
+                y_lower = y_upper + gap  # 10 for the 0 samples
 
             ax.set_title("k=" + str(k))
 
@@ -231,7 +268,7 @@ class TimeSeriesKMeansClustering:
             ax.axvline(x=silhouette_avg, color="red", linestyle="--")
 
             ax.set_yticks([])  # Clear the yaxis labels / ticks
-            ax.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+            ax.set_xticks([min_x, 0, 0.2, 0.4, 0.6, 0.8, 1])
 
             # Update for next plot
             if current_col_idx == 3:

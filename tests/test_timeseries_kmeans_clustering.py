@@ -12,6 +12,7 @@ from src.helper import device_status_file_path_for
 from src.multivariate_resampled_series import MultivariateResampledSeries
 from src.preprocess import number_of_interval_in_days
 from src.read import read_flat_device_status_df_from_file
+from src.stats import DailyTimeseries
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 from tests.helper.BgDfBuilder import create_time_stamps
 
@@ -47,13 +48,45 @@ def test_plots_clusters_in_grid():
     km.plot_clusters_in_grid(y_label_substr=col_to_cluster)
 
 
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_plots_clustered_ts_and_others_in_grid():
+    sampling = DailyTimeseries()
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, sampling)
+
+    x_train = mv.get_1d_numpy_array(sampling.cob_col)
+    x_full = mv.get_multivariate_3d_numpy_array()
+    km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"], x_ticks=xtick,
+                                    x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
+
+    # no asserts as it generates a plot
+    km.plot_clusters_in_grid(y_label_substr=col_to_cluster)
+
+
 def test_plots_silhouette_blob_for_k():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], x_ticks=xtick)
 
-    km.plot_silhouette_blob_for_k(ks=[2, 3, 4, 5, 6, 7,  8, 9])
+    km.plot_silhouette_blob_for_k(ks=[2, 3, 4, 5, 6, 7, 8, 20])
+
+
+def test_plots_silhouette_blob_for_small_ks():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    x_train = series.as_x_train(col_to_cluster)
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], x_ticks=xtick)
+
+    km.plot_silhouette_blob_for_k(ks=[2, 3, 4, 5, 6, 7, 8, 9])
+
+
+def test_plots_silhouette_blob_for_single_row_ks():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    x_train = series.as_x_train(col_to_cluster)
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], x_ticks=xtick)
+
+    km.plot_silhouette_blob_for_k(ks=[2, 7, 8, 28])
 
 
 def test_plots_silhouette_score_for_k():

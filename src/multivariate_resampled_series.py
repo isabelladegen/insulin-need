@@ -15,6 +15,7 @@ class TimeColumns:  # Daily TS
     hour = 'hours'
 
 
+# Sadly this reads real data from file which probably is a mistake, but helpful for the notebooks
 class MultivariateResampledSeries:
     __multivariate_df = None
     __multivariate_df_with_time_cols = None
@@ -129,6 +130,27 @@ class MultivariateResampledSeries:
             return self.raw_df.index.hour
         return None
 
+    """
+       Shape of results 2D, eg IOB and COB
+       2D(IOB, COB):
+
+        [[[iob_day_1_hour1 cob_day_1_hour1],
+          [iob_day_1_hour2 cob_day_1_hour2],
+          ...
+          [iob_day_1_hour23 cob_day_1_hour23]],
+        [[iob_day_2_hour1 cob_day_2_hour1],
+         [iob_day_2_hour2 cob_day_2_hour2],
+         ...
+         [iob_day_2_hour23 cob_day_2_hour23]],
+        ...
+        [[iob_day_x_hour1 cob_dayx1_hour1],
+         [iob_day_x_hour2 cob_day_x_hour2],
+         ...
+         [iob_day_x_hour23
+        cob_day_x_hour23]]]
+
+    """
+
     def get_multivariate_3d_numpy_array(self):
         """Returns resampled regular ts as 3d ndarray of IOB, COB and BG
 
@@ -144,6 +166,24 @@ class MultivariateResampledSeries:
                                                                 self.sampling.length,
                                                                 3)
         return self.__multivariate_nparray
+
+    """
+    Shape of result 1D:
+    
+    [[[day_1_hour1],
+      [day_1_hour2],
+      ...
+      [day_1_hour23]],
+     [[day_2_hour1],
+      [day_2_hour2],
+      [...
+       [day_2_hour23]],
+      ...
+      [[day_x_hour1],
+       [day_x_hour2],
+       ...
+       [day_x_hour23]]]
+    """
 
     def get_1d_numpy_array(self, series_name):
         """Returns resampled regular ts as 1d ndarray
