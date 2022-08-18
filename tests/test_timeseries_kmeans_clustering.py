@@ -48,6 +48,44 @@ def test_plots_clusters_in_grid():
     km.plot_clusters_in_grid(y_label_substr=col_to_cluster)
 
 
+def test_plots_all_barrycenters_in_one_plot_for_one_column():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    x_train = series.as_x_train(col_to_cluster)
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], x_ticks=xtick)
+
+    # no asserts as it generates a plot
+    km.plot_barry_centers_in_one_plot(y_label_substr=col_to_cluster)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_plots_all_barrycenters_in_one_plot_for_multiple_columns():
+    sampling = DailyTimeseries()
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, sampling)
+
+    x_train = mv.get_1d_numpy_array(sampling.cob_col)
+    x_full = mv.get_multivariate_3d_numpy_array()
+    km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"], x_ticks=xtick,
+                                    x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
+
+    # no asserts as it generates a plot
+    km.plot_barry_centers_in_one_plot(y_label_substr=col_to_cluster)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_plots_all_columns_barry_centers_in_one_plot_for_multiple_clusters():
+    sampling = DailyTimeseries()
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, sampling)
+
+    x_train = mv.get_1d_numpy_array(sampling.cob_col)
+    x_full = mv.get_multivariate_3d_numpy_array()
+    km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"], x_ticks=xtick,
+                                    x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
+
+    # no asserts as it generates a plot
+    km.plot_all_barry_centers_in_one_plot_for_multiple_clusters(y_label_substr=col_to_cluster)
+
+
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_clustered_ts_and_others_in_grid():
     sampling = DailyTimeseries()
