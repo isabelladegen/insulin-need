@@ -83,7 +83,7 @@ def test_plots_all_columns_barry_centers_in_one_plot_for_multiple_clusters():
                                     x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
 
     # no asserts as it generates a plot
-    km.plot_all_barry_centers_in_one_plot_for_multiple_clusters(y_label_substr=col_to_cluster)
+    km.plot_barrycenters_of_different_cols_in_one_plot(y_label_substr=col_to_cluster)
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")

@@ -185,7 +185,7 @@ class TimeSeriesKMeansClustering:
         plt.show()
 
     def plot_barry_centers_in_one_plot(self, y_label_substr):
-        """Plots row for all barry centers in  one plot, if x_full given does it for the other cols too
+        """Plots row for all barry centers in one plot, if x_full given does it for the other cols too
 
         Parameters
         ----------
@@ -238,7 +238,7 @@ class TimeSeriesKMeansClustering:
         plt.xlabel("X = hours of day (UTC)")
         plt.show()
 
-    def plot_all_barry_centers_in_one_plot_for_multiple_clusters(self, y_label_substr):
+    def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr):
         """Plots barrycents with clusters as rows and columns collapsed into one row
 
         Parameters
@@ -251,50 +251,38 @@ class TimeSeriesKMeansClustering:
 
         # setup figure
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
-        fig_size = (4 * no_dimensions, no_clusters * 2)  # allow for multicolumn grids and single column grids
+        fig_size = (10, no_clusters * 2)
         fig, axs = plt.subplots(nrows=no_clusters,
-                                ncols=no_dimensions,
+                                ncols=1,
                                 sharey=True,
                                 sharex=True,
                                 figsize=fig_size, squeeze=0)
-        fig.suptitle("DBA k-means. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
+        fig.suptitle("DBA k-means barrycenters. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
                      + str(len(self.y_pred)))
 
         # clusters are on the rows
         for row_idx in range(no_clusters):
             is_in_cluster_yi = (self.y_pred == row_idx)
 
-            # plot all the time series for cluster row_idx and all dimensions
-            if self.__x_full is None:  # just plot x train
-                series_in_cluster_yi = self.__x_train[is_in_cluster_yi]
-            else:  # plot x_full
-                series_in_cluster_yi = self.__x_full[is_in_cluster_yi]
-            for xx in series_in_cluster_yi:
-                for col_idx, col in enumerate(self.__cols_to_plot):
-                    ts = xx[:, col_idx]
-                    # plot the ts for each variate in columns
-                    axs[row_idx, col_idx].plot(ts.ravel(), 'k-', alpha=.2)
-
             # plot the barrycenter line and title
             for col_idx, col in enumerate(self.__cols_to_plot):
                 # a column for which the barrycenters has already been calculated for clustering
                 if col in self.__x_train_column_names:
-                    axs[row_idx, col_idx].plot(
-                        self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index(col)], "r-")
+                    axs[row_idx, 0].plot(
+                        self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index(col)], "-", label=col)
                 else:  # calculate barrycenters for the none clustered cols
+                    series_in_cluster_yi = self.__x_full[is_in_cluster_yi]
                     bc = dtw_barycenter_averaging(series_in_cluster_yi[:, :, col_idx])
-                    axs[row_idx, col_idx].plot(bc.ravel(), "b-")
+                    axs[row_idx, 0].plot(bc.ravel(), "-", label=col)
 
-                axs[row_idx, col_idx].set_xticks(self.__x_ticks)
-                axs[row_idx, col_idx].grid(which='major', alpha=0.2, color='grey')
-
-                # set title for first row
-                if row_idx == 0:
-                    axs[0, col_idx].set_title(col)
+                axs[row_idx, 0].set_xticks(self.__x_ticks)
+                axs[row_idx, 0].grid(which='major', alpha=0.2, color='grey')
 
             # set y label for row with cluster information
             axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()))
 
+        handles, labels = axs[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper right')
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         plt.subplots_adjust(top=.9)
