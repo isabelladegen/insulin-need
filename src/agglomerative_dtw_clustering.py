@@ -97,6 +97,8 @@ class AgglomerativeTSClustering:
         fig.suptitle(
             "Agglomerative Clustering. Distance threshold "
             + str(self.model.distance_threshold)
+            + ". Linkage "
+            + str(self.model.linkage)
             + ". Clustered by "
             + ', '.join(self.__x_train_column_names)
             + ". No of TS "
