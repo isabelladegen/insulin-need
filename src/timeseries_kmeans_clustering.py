@@ -10,8 +10,10 @@ from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScaler
 
 from tslearn.utils import to_time_series_dataset, to_time_series
 
-
 # Time series implementation of ts_silhouette_samples
+from src.stats import DailyTimeseries, Sampling
+
+
 def ts_silhouette_samples(X, labels, metric=None, metric_params=None, n_jobs=None, verbose=0, **kwds):
     sklearn_metric = None
     if metric_params is None:
@@ -60,7 +62,7 @@ class TimeSeriesKMeansClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], x_ticks: [],
+    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None):
         """Collection of convenience function for tslearn k-means.
 
@@ -79,6 +81,9 @@ class TimeSeriesKMeansClustering:
         x_ticks : [int]
             x_ticks to be used
 
+        sampling : Sampling
+            used to calibrate the x axis of the graphs
+
         scaler : TimeSeriesScalerMinMax or TimeSeriesScalerMeanVariance or None if no scaling
             Default is MinMax scaling
 
@@ -89,9 +94,9 @@ class TimeSeriesKMeansClustering:
 
         x_full_column_names : []
             columns for x full to be able to find the right TS in the np.array
+            :param sampling:
         """
         self.__n_clusters = n_clusters
-        self.__x_ticks = x_ticks
         self.__scaler = scaler
         if self.__scaler is None:
             self.__x_train = x_train
@@ -102,6 +107,8 @@ class TimeSeriesKMeansClustering:
         self.__metric = "dtw"
         self.__max_iter = 10
         self.__random_state = 66
+        self.__x_ticks = sampling.x_ticks
+        self.__x_label = "X = " + sampling.description
 
         if x_full is not None:
             assert (x_full_column_names is not None)
@@ -181,7 +188,7 @@ class TimeSeriesKMeansClustering:
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
         plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
-        plt.xlabel("X = hours of day (UTC)")
+        plt.xlabel(self.__x_label)
         plt.show()
 
     def plot_barry_centers_in_one_plot(self, y_label_substr):
@@ -236,7 +243,7 @@ class TimeSeriesKMeansClustering:
         # add overall x, y text
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
-        plt.xlabel("X = hours of day (UTC)")
+        plt.xlabel(self.__x_label)
         plt.show()
 
     def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr):
@@ -292,7 +299,7 @@ class TimeSeriesKMeansClustering:
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
         plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
-        plt.xlabel("X = hours of day (UTC)")
+        plt.xlabel(self.__x_label)
         plt.show()
 
     def plot_silhouette_blob_for_k(self, ks: [int]):

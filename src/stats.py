@@ -14,6 +14,8 @@ class Sampling:
     sample_rule = None  # the frequency of the regular time series after resampling
     resolution = None
     length = 0
+    description = ''
+    x_ticks = []
 
 
 @dataclass
@@ -25,6 +27,8 @@ class DailyTimeseries(Sampling):  # Daily TS
     sample_rule = '1H'  # the frequency of the regular time series after resampling
     resolution = Resolution.Day
     length = 24
+    description = 'hours of day (UTC)'
+    x_ticks = list(range(0, 24, 2))
 
 
 @dataclass
@@ -36,6 +40,8 @@ class WeeklyTimeseries(Sampling):  # Weekly TS
     sample_rule = '1D'  # the frequency of the regular time series after resampling
     resolution = Resolution.Week
     length = 7
+    description = 'Day of Week, 0=Monday'
+    x_ticks = list(range(0, 7))
 
 
 @dataclass
