@@ -42,17 +42,33 @@ def test_plots_clusters_in_grid():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     # no asserts as it generates a plot
     km.plot_clusters_in_grid(y_label_substr=col_to_cluster)
+
+
+def test_returns_y_of_classes():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    x_train = series.as_x_train(col_to_cluster)
+    no_clusters = 5
+    km = TimeSeriesKMeansClustering(n_clusters=no_clusters, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
+
+    y = km.y_pred
+
+    assert_that(len(y), is_(x_train.shape[0]))
+    assert_that(len(set(y)), is_(no_clusters))
 
 
 def test_plots_all_barrycenters_in_one_plot_for_one_column():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     # no asserts as it generates a plot
     km.plot_barry_centers_in_one_plot(y_label_substr=col_to_cluster)
@@ -104,7 +120,8 @@ def test_plots_silhouette_blob_for_k():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     km.plot_silhouette_blob_for_k(ks=[2, 3, 4, 5, 6, 7, 8, 20])
 
@@ -113,7 +130,8 @@ def test_plots_silhouette_blob_for_small_ks():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     km.plot_silhouette_blob_for_k(ks=[2, 3, 4, 5, 6, 7, 8, 9])
 
@@ -122,7 +140,8 @@ def test_plots_silhouette_blob_for_single_row_ks():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     km.plot_silhouette_blob_for_k(ks=[2, 7, 8, 28])
 
@@ -131,7 +150,8 @@ def test_plots_silhouette_score_for_k():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     km.plot_mean_silhouette_score_for_k(range(2, 6))
 
@@ -140,6 +160,7 @@ def test_plots_elbow_method_for_k():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 
     x_train = series.as_x_train(col_to_cluster)
-    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"], sampling=DailyTimeseries())
+    km = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries())
 
     km.plot_sum_of_square_distances_for_k(range(2, 6))

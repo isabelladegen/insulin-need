@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import pandas as pd
+
 from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries, Resolution, Cols
 from src.helper import device_status_file_path_for
@@ -9,6 +11,8 @@ from src.stats import Sampling
 
 @dataclass
 class TimeColumns:  # Daily TS
+    day_of_year = "day of year"
+    week_of_year = "week"
     month = 'month'
     year = 'year'
     week_day = 'weekday'
@@ -103,6 +107,8 @@ class MultivariateResampledSeries:
             df[TimeColumns.month] = df.index.month
             df[TimeColumns.week_day] = df.index.weekday
             df[TimeColumns.year] = df.index.year
+            df[TimeColumns.week_of_year] = df.index.isocalendar().week
+            df[TimeColumns.day_of_year] = df.index.day_of_year
             self.__multivariate_df_with_time_cols = df
         return self.__multivariate_df_with_time_cols
 
@@ -201,3 +207,37 @@ class MultivariateResampledSeries:
         """
         df = self.get_multivariate_df()
         return df[series_name].to_numpy().reshape(int(len(df) / self.sampling.length), self.sampling.length, 1)
+
+    def get_vectorised_df(self, series_name):
+        """Returns df vectorised into rows being n_ts and columns being features n_ts, and special time columns
+
+        Parameters
+        ----------
+        series_name : str
+            which of the multivariate series to return, IOB, COB or BG (use sampling class for proper name)
+
+        Returns
+        -------
+        dataframe
+            X_train of shape=(n_ts, n_features), where n_ts is number of days or weeks (depending on sampling resolution),
+            and n_features is each sample in each ts as a feature, plus the special time columns
+        """
+        # get numpy 1D array that's already shaped with hours resp weekdays as columns and drop 3rd dimension
+        array = self.get_1d_numpy_array(series_name)
+        shape = array.shape
+        twoDArray = array.reshape(shape[0], shape[1])
+        df = pd.DataFrame(twoDArray)
+
+        if self.sampling.length == 24:
+            time_columns = [TimeColumns.day_of_year, TimeColumns.week_day, TimeColumns.week_of_year, TimeColumns.month,
+                            TimeColumns.year]
+        elif self.sampling.length == 7:
+            time_columns = [TimeColumns.week_of_year, TimeColumns.month, TimeColumns.year]
+        else:
+            time_columns = []
+
+        orig_df = self.get_multivariate_df_with_special_time_columns()[time_columns]
+        reduced_df = orig_df.drop_duplicates(keep='first')
+        for column in list(reduced_df.columns):
+            df[column] = list(reduced_df[column]) # list to ignore index
+        return df

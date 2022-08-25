@@ -97,3 +97,29 @@ def test_calculates_resampled_1d_nparray_of_daily_ts():
     assert_that(list(series.get_multivariate_df()[sampling.cob_col]) == list(cob.reshape(24 * 253).astype(np.float32)))
     assert_that(bg.shape, is_((253, 24, 1)))
     assert_that(list(series.get_multivariate_df()[sampling.bg_col]) == list(bg.reshape(24 * 253).astype(np.float32)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_vectorised_df_daily_sampling():
+    zip_id = '14092221'
+    sampling = DailyTimeseries()
+    series = MultivariateResampledSeries(zip_id, Cols.Mean, sampling)
+
+    df = series.get_vectorised_df(sampling.iob_col)
+
+    number_of_days = 253
+    number_of_features = 24 + 5
+    assert_that(df.shape, is_((number_of_days, number_of_features)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_vectorised_df_weekly_sampling():
+    zip_id = '14092221'
+    sampling = WeeklyTimeseries()
+    series = MultivariateResampledSeries(zip_id, Cols.Mean, sampling)
+
+    df = series.get_vectorised_df(sampling.iob_col)
+
+    number_of_days = 49
+    number_of_features = 7 + 3
+    assert_that(df.shape, is_((number_of_days, number_of_features)))
