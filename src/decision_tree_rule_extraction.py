@@ -29,7 +29,7 @@ class DecisionTreeRuleExtraction:
                                             random_state=66,
                                             max_leaf_nodes=None,
                                             min_impurity_decrease=0.0,
-                                            class_weight="balanced",
+                                            class_weight=None,
                                             # The “balanced” mode uses the values of y to automatically adjust weights
                                             # inversely proportional to class frequencies in the input data as n_samples
                                             # / (n_classes * np.bincount(y))
@@ -57,7 +57,7 @@ class DecisionTreeRuleExtraction:
         graph = graphviz.Source(dot_data)
         return graph
 
-    def plot_feature_importance(self, sns=None):
+    def plot_feature_importance(self):
         """Plots feature importance
 
         """

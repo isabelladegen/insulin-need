@@ -228,13 +228,15 @@ class MultivariateResampledSeries:
         twoDArray = array.reshape(shape[0], shape[1])
         df = pd.DataFrame(twoDArray)
 
+        series_short_name = series_name.split('/')[-1]
         if self.sampling.length == 24:
-            df.columns = [series_name.split('/')[-1] + " at " + str(x) for x in df.columns]  # create strings
+            df.columns = [series_short_name + " at " + str(x) for x in df.columns]  # create strings
             time_columns = [TimeColumns.day_of_year, TimeColumns.week_day, TimeColumns.week_of_year, TimeColumns.month,
                             TimeColumns.year]
             cols_for_uniques = [TimeColumns.day_of_year, TimeColumns.year]
         elif self.sampling.length == 7:
-            df.columns = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]  # create strings
+            df.columns = [series_short_name + " " + x for x in
+                          ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]]  # create strings
             time_columns = [TimeColumns.week_of_year, TimeColumns.month, TimeColumns.year]
             cols_for_uniques = [TimeColumns.week_of_year, TimeColumns.year]
         else:
