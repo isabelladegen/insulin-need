@@ -63,7 +63,8 @@ class TimeSeriesKMeansClustering:
     """
 
     def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
-                 scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None):
+                 scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
+                 distance_metric="dtw", metric_prams=None):
         """Collection of convenience function for tslearn k-means.
 
         Parameters
@@ -104,7 +105,8 @@ class TimeSeriesKMeansClustering:
             # this is really important especially for multivariate TS
             self.__x_train = self.__scaler.fit_transform(x_train)  # normalise data
         self.__x_train_column_names = x_train_column_names
-        self.__metric = "dtw"
+        self.__metric = distance_metric
+        self.__metric_params = metric_prams
         self.__max_iter = 10
         self.__random_state = 66
         self.__x_ticks = sampling.x_ticks
@@ -120,7 +122,8 @@ class TimeSeriesKMeansClustering:
             self.__cols_to_plot = self.__x_train_column_names
 
         # create clusters
-        self.model = TimeSeriesKMeans(n_clusters=self.__n_clusters, metric=self.__metric, max_iter=self.__max_iter,
+        self.model = TimeSeriesKMeans(n_clusters=self.__n_clusters, metric=self.__metric,
+                                      metric_params=self.__metric_params, max_iter=self.__max_iter,
                                       random_state=self.__random_state)
         self.y_pred = self.model.fit_predict(self.__x_train)
 

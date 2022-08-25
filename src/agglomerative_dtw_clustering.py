@@ -25,7 +25,10 @@ class AgglomerativeTSClustering:
     def __init__(self, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_threshold=0.5,
-                 linkage="single"):
+                 linkage="single",
+                 distance_constraint=None,
+                 sakoe_chiba_radius=None
+                 ):
         """Collection of convenience function for tslearn k-means.
 
         Parameters
@@ -52,6 +55,8 @@ class AgglomerativeTSClustering:
             columns for x full to be able to find the right TS in the np.array
             :param sampling:
         """
+        self.distance_constraint = distance_constraint
+        self.sakoe_chiba_radius = sakoe_chiba_radius
         self.__scaler = scaler
         if self.__scaler is None:
             self.__x_train = x_train
@@ -115,7 +120,6 @@ class AgglomerativeTSClustering:
             self.__x_train_column_names) + ". No of TS " + str(len(self.y_pred))
 
         # clusters are on the rows
-
 
         for row_idx, cluster_idx in enumerate(cluster_indexes):
             is_in_cluster_yi = (y_pred == cluster_idx)
@@ -237,7 +241,8 @@ class AgglomerativeTSClustering:
             for column in range(n_ts):
                 s1 = self.__x_train[row, :, 0]
                 s2 = self.__x_train[column, :, 0]
-                distance_matrix[row][column] = dtw(s1, s2, global_constraint=None, sakoe_chiba_radius=None,
+                distance_matrix[row][column] = dtw(s1, s2, global_constraint=self.distance_constraint,
+                                                   sakoe_chiba_radius=self.sakoe_chiba_radius,
                                                    itakura_max_slope=None)
         return distance_matrix
 

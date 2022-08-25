@@ -64,3 +64,23 @@ def test_plots_clustered_ts_and_others_in_grid():
     assert_that(n_cluster, greater_than(2))
     assert_that(n_cluster, less_than(no_ts))
     ac.plot_clusters_in_grid(y_label_substr=col_to_cluster)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_clusters_using_sakoe_chiba():
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, dailySampling)
+
+    x_train = mv.get_1d_numpy_array(dailySampling.cob_col)
+    no_ts = x_train.shape[0]
+    x_full = mv.get_multivariate_3d_numpy_array()
+    ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], sampling=dailySampling,
+                                   x_full=x_full, x_full_column_names=["IOB", "COB", "BG"],
+                                   distance_constraint="sakoe_chiba",
+                                   sakoe_chiba_radius=3)
+
+    assert_that(ac.distance_matrix.shape, is_((no_ts, no_ts)))
+    assert_that(len(ac.y_pred), is_(no_ts))
+    n_cluster = ac.no_clusters
+    assert_that(n_cluster, greater_than(2))
+    assert_that(n_cluster, less_than(no_ts))
+    ac.plot_clusters_in_grid(y_label_substr=col_to_cluster)
