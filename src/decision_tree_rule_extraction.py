@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import graphviz
 from matplotlib import pyplot as plt
@@ -7,17 +6,17 @@ from sklearn.tree import DecisionTreeClassifier, export_text
 
 
 class DecisionTreeRuleExtraction:
-    def __init__(self, x_train: np.array, y):
+    def __init__(self, x_train: pd.DataFrame, y):
         """Collection of convenience function for sklearn DecisionTreeClassifier
 
                 Parameters
                 ----------
-                x_train : np.array
-                    timeseries to cluster as np.array of shape=(n_ts, n_features), where n_ts is number of days and
-                    n_features is the features to consider e.g hours of day, year, month, weekday
+                x_train : pd.DataFrame
+                    timeseries to cluster as np.array of shape=(n_ts, n_features), where n_ts is number of days as rows
+                    and n_features is the features to consider as columns e.g hours of day, year, month, weekday
 
-                x_train_column_names: []
-                    list of ts names in x_train
+               y: []
+                    class prediction for each of the n_ts
         """
         self.__x_train = x_train
         self.model = DecisionTreeClassifier(criterion='gini',
@@ -57,21 +56,17 @@ class DecisionTreeRuleExtraction:
                                         special_characters=True)
         graph = graphviz.Source(dot_data)
         return graph
-        # plt.rcParams.update({'figure.facecolor': 'white', 'figure.figsize': (25, 20), 'figure.dpi': 150})
-        # tree.plot_tree(self.model,
-        #                feature_names=self.__get_list_of_features(),
-        #                class_names=[str(x) for x in self.model.classes_],  # cannot deal with ints as classes
-        #                filled=True,
-        #                rounded=True)
-        # plt.show()
 
     def plot_feature_importance(self, sns=None):
         """Plots feature importance
 
         """
+        plt.rcParams.update({'figure.facecolor': 'white'})
+        plt.figure(figsize=(10, 5), dpi=150)
         feature_imp = self.model.feature_importances_
         features = self.__get_list_of_features()
-        pd.DataFrame({'Feature': features, 'Importance': feature_imp}).plot.bar(x='Feature', y='Importance')
+        pd.DataFrame({'Feature': features, 'Feature Importance': feature_imp}).plot.bar(x='Feature',
+                                                                                        y='Feature Importance')
 
     def __get_list_of_features(self):
-        return [str(x) for x in list(self.__x_train.columns)]
+        return list(self.__x_train.columns)

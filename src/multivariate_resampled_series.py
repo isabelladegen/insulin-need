@@ -229,15 +229,20 @@ class MultivariateResampledSeries:
         df = pd.DataFrame(twoDArray)
 
         if self.sampling.length == 24:
+            df.columns = [series_name.split('/')[-1] + " at " + str(x) for x in df.columns]  # create strings
             time_columns = [TimeColumns.day_of_year, TimeColumns.week_day, TimeColumns.week_of_year, TimeColumns.month,
                             TimeColumns.year]
+            cols_for_uniques = [TimeColumns.day_of_year, TimeColumns.year]
         elif self.sampling.length == 7:
+            df.columns = ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]  # create strings
             time_columns = [TimeColumns.week_of_year, TimeColumns.month, TimeColumns.year]
+            cols_for_uniques = [TimeColumns.week_of_year, TimeColumns.year]
         else:
             time_columns = []
+            cols_for_uniques = None
 
         orig_df = self.get_multivariate_df_with_special_time_columns()[time_columns]
-        reduced_df = orig_df.drop_duplicates(keep='first')
+        reduced_df = orig_df.drop_duplicates(subset=cols_for_uniques, keep='first')
         for column in list(reduced_df.columns):
-            df[column] = list(reduced_df[column]) # list to ignore index
+            df[column] = list(reduced_df[column])
         return df
