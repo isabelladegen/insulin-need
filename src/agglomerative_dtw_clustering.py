@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt, cm
+from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 from tslearn.barycenters import dtw_barycenter_averaging
 from tslearn.clustering import silhouette_score
@@ -233,6 +234,52 @@ class AgglomerativeTSClustering:
         ax.set_ylabel(str(no_non_single_clusters) + " non single ts clusters. Total " + str(self.no_clusters))
         plt.show()
 
+    def plot_dendrogram(self, truncated_mode: str = None, p: int = None, show_contracted: bool = False,
+                        show_leave_count=False, count_sort=False, distance_sort=False, no_labels=False):
+        """Plots dendrogram of clusters
+        """
+        counts = np.zeros(self.model.children_.shape[0])
+        n_samples = len(self.model.labels_)
+        for i, merge in enumerate(self.model.children_):
+            current_count = 0
+            for child_idx in merge:
+                if child_idx < n_samples:
+                    current_count += 1  # leaf node
+                else:
+                    current_count += counts[child_idx - n_samples]
+            counts[i] = current_count
+
+        linkage_matrix = np.column_stack([self.model.children_, self.model.distances_, counts]).astype(float)
+        print("Additional distance metrics: " + self.distance_constraint + ' & ' + str(self.sakoe_chiba_radius))
+
+        # Plot the corresponding dendrogram
+        plt.rcParams.update({'figure.facecolor': 'white',
+                             'axes.facecolor': 'white',
+                             'figure.dpi': 150,
+                             'figure.figsize': (20, 15)
+                             })
+        truncated_str = '(truncated)' if truncated_mode else ''
+        plt.title('Hierarchical Clustering Dendrogram ' + truncated_str + '. No TS ' + str(
+            len(self.y_pred)), fontsize=20)
+        plt.xlabel('No clusters: ' + str(len(set(self.y_pred))) +
+                   '. No ts in majority cluster: ' + str(list(self.y_pred).count(np.bincount(self.y_pred).argmax())),
+                   fontsize=18)
+        plt.ylabel('Distance. Linkage: ' + self.model.linkage + ', threshold: ' + str(self.model.distance_threshold),
+                   fontsize=18)
+        dendrogram(
+            linkage_matrix,
+            truncate_mode=truncated_mode,
+            p=p,
+            leaf_rotation=90.,
+            show_contracted=show_contracted,
+            show_leaf_counts=show_leave_count,
+            count_sort=count_sort,
+            color_threshold=self.model.distance_threshold,
+            distance_sort=distance_sort,
+            leaf_font_size=12,
+            no_labels=no_labels
+        )
+
     def get_y_pred_as_binary(self):
         """Returns y pred with only two classes: normal and anomaly. The normal class is the most frequent class
         """
@@ -256,33 +303,6 @@ class AgglomerativeTSClustering:
                                                    sakoe_chiba_radius=self.sakoe_chiba_radius,
                                                    itakura_max_slope=None)
         return distance_matrix
-
-    def __get_dictionary_of_clusters_and_ts_in_cluster(self):
-        """ Creates dictionary with cluster index as key and TS in that cluster
-
-            :returns
-            {key = cluster index  : value = ts in that cluster}
-        """
-        result = {}
-        for cluster_index in range(self.no_clusters):
-            is_in_cluster_yi = (self.y_pred == cluster_index)
-            series_in_cluster_yi = self.__x_train[is_in_cluster_yi]
-            result[cluster_index] = series_in_cluster_yi
-        return result
-
-    def __get_multiple_ts_clusters(self, clusters_dict):
-        """ Return dictionary of all the clusters that have more than one ts
-
-           :returns
-           {key = cluster index with more than one ts  : value = ts in that cluster}
-        """
-        result = {}
-        for cluster_index in clusters_dict:
-            # cluster has more than one ts
-            timeseries_in_cluster = clusters_dict[cluster_index]
-            if timeseries_in_cluster.shape[0] > 1:
-                result[cluster_index] = timeseries_in_cluster
-        return result
 
     def __calculate_silhouette_values(self):
         """ Calculates silhouette score for clusters with more than one ts and silhouette values for all clusters
@@ -319,3 +339,30 @@ class AgglomerativeTSClustering:
         self.x_full_for_non_single_clusters = x_full_for_actual_clusters
         self.silhouette_avg = silhouette_score(x_train_for_actual_clusters, y_pred_for_actual_clusters, metric="dtw")
         self.sample_silhouette_values = ts_silhouette_samples(x_train_for_actual_clusters, y_pred_for_actual_clusters)
+
+    def __get_dictionary_of_clusters_and_ts_in_cluster(self):
+        """ Creates dictionary with cluster index as key and TS in that cluster
+
+            :returns
+            {key = cluster index  : value = ts in that cluster}
+        """
+        result = {}
+        for cluster_index in range(self.no_clusters):
+            is_in_cluster_yi = (self.y_pred == cluster_index)
+            series_in_cluster_yi = self.__x_train[is_in_cluster_yi]
+            result[cluster_index] = series_in_cluster_yi
+        return result
+
+    def __get_multiple_ts_clusters(self, clusters_dict):
+        """ Return dictionary of all the clusters that have more than one ts
+
+           :returns
+           {key = cluster index with more than one ts  : value = ts in that cluster}
+        """
+        result = {}
+        for cluster_index in clusters_dict:
+            # cluster has more than one ts
+            timeseries_in_cluster = clusters_dict[cluster_index]
+            if timeseries_in_cluster.shape[0] > 1:
+                result[cluster_index] = timeseries_in_cluster
+        return result

@@ -97,3 +97,21 @@ def test_returns_y_pred_as_binary_with_most_frequent_normal_and_other_classes_an
     assert_that(len(set(result)), is_(2))  # normal and anomaly as class
     assert_that(len(result), is_(x_train.shape[0]))
     assert_that(result.count("normal"), less_than(result.count("anomaly")))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_plots_dendrogram():
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, dailySampling)
+
+    x_train = mv.get_1d_numpy_array(dailySampling.cob_col)
+    no_ts = x_train.shape[0]
+    x_full = mv.get_multivariate_3d_numpy_array()
+    ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], sampling=dailySampling,
+                                   x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
+
+    assert_that(ac.distance_matrix.shape, is_((no_ts, no_ts)))
+    assert_that(len(ac.y_pred), is_(no_ts))
+    n_cluster = ac.no_clusters
+    assert_that(n_cluster, greater_than(2))
+    assert_that(n_cluster, less_than(no_ts))
+    ac.plot_dendrogram()
