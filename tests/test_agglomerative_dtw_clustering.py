@@ -84,3 +84,16 @@ def test_clusters_using_sakoe_chiba():
     assert_that(n_cluster, greater_than(2))
     assert_that(n_cluster, less_than(no_ts))
     ac.plot_clusters_in_grid(y_label_substr=col_to_cluster)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_y_pred_as_binary_with_most_frequent_normal_and_other_classes_annomaly():
+    mv = MultivariateResampledSeries('13484299', col_to_cluster, dailySampling)
+
+    x_train = mv.get_1d_numpy_array(dailySampling.cob_col)
+    ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], sampling=dailySampling)
+
+    result = ac.get_y_pred_as_binary()
+    assert_that(len(set(result)), is_(2))  # normal and anomaly as class
+    assert_that(len(result), is_(x_train.shape[0]))
+    assert_that(result.count("normal"), less_than(result.count("anomaly")))

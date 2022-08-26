@@ -233,6 +233,17 @@ class AgglomerativeTSClustering:
         ax.set_ylabel(str(no_non_single_clusters) + " non single ts clusters. Total " + str(self.no_clusters))
         plt.show()
 
+    def get_y_pred_as_binary(self):
+        """Returns y pred with only two classes: normal and anomaly. The normal class is the most frequent class
+        """
+        most_frequent_class = np.bincount(self.y_pred).argmax()
+        result = ["normal" if x == most_frequent_class else "anomaly" for x in self.y_pred]
+        print("Number of classes: " + str(len(set(self.y_pred))))
+        print("Majority class: " + str(most_frequent_class))
+        print("Frequency of majority class: " + str(list(self.y_pred).count(most_frequent_class)))
+        print("Frequency of other classes: " + str(result.count("anomaly")))
+        return result
+
     def __calculate_distance_matrix(self):
         # return symmetric matrix of dtw distances
         n_ts = self.__x_train.shape[0]
