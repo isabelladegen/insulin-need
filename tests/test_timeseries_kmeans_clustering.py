@@ -49,6 +49,26 @@ def test_plots_clusters_in_grid():
     km.plot_clusters_in_grid(y_label_substr=col_to_cluster)
 
 
+def test_uses_additional_parameters_for_distance_calculation():
+    series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
+
+    x_train = series.as_x_train(col_to_cluster)
+    distance_params = {"global_constraint": "sakoe_chiba",
+                       "sakoe_chiba_radius": 1}
+    ks = [4]
+    km_sakoe = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries(), distance_metric="dtw", metric_prams=distance_params)
+    km_standard = TimeSeriesKMeansClustering(n_clusters=4, x_train=x_train, x_train_column_names=["IOB"],
+                                    sampling=DailyTimeseries(), distance_metric="dtw", metric_prams=None)
+
+    ss_sakoe = km_sakoe.calculate_mean_silhouette_score_for_ks(ks)[0]
+    ss_standard = km_standard.calculate_mean_silhouette_score_for_ks(ks)[0]
+    print("SS Sakoe: " + str(ss_sakoe))
+    print("SS Standard: " + str(ss_standard))
+
+    assert_that(ss_sakoe, less_than(ss_standard))
+
+
 def test_returns_y_of_classes():
     series = ContinuousSeries(df, min_days_of_data, max_interval, time_col, value_col, sample_rule)
 

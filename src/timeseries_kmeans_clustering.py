@@ -64,7 +64,7 @@ class TimeSeriesKMeansClustering:
 
     def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
-                 distance_metric="dtw", metric_prams=None):
+                 distance_metric="dtw", metric_prams: {} = None):
         """Collection of convenience function for tslearn k-means.
 
         Parameters
@@ -315,7 +315,8 @@ class TimeSeriesKMeansClustering:
             multiple of 4
         """
         no_clusters = len(ks)
-        no_rows = int(len(ks) / 4)
+        multiples_of_4 = int(len(ks) / 4)
+        no_rows =  1 if multiples_of_4 == 0 else multiples_of_4
         no_cols = 4
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
         max_k = max(ks)
@@ -342,8 +343,9 @@ class TimeSeriesKMeansClustering:
 
             # Run Kmeans
             k = ks[plot_no]
-            model = TimeSeriesKMeans(n_clusters=k, metric=self.__metric, max_iter=self.__max_iter,
-                                     random_state=self.__random_state)
+            model = TimeSeriesKMeans(n_clusters=k, metric=self.__metric,
+                                     metric_params=self.__metric_params, max_iter=self.__max_iter,
+                                     random_state=self.__random_state, )
             y_pred = model.fit_predict(self.__x_train)
 
             # calculate silhouette score
@@ -413,7 +415,7 @@ class TimeSeriesKMeansClustering:
         ks : [int]
             all cluster numbers to plot silhouette score for
         """
-        silhouette_avg = self.__calculate_mean_silhouette_score_for_ks(ks)
+        silhouette_avg = self.calculate_mean_silhouette_score_for_ks(ks)
 
         plt.rcParams.update({'figure.facecolor': 'white'})
         # plot silhouette score
@@ -445,11 +447,12 @@ class TimeSeriesKMeansClustering:
         plt.title('Elbow method for finding optimal k clusterd cols ' + ', '.join(self.__x_train_column_names))
         plt.show()
 
-    def __calculate_mean_silhouette_score_for_ks(self, ks: [int]):
+    def calculate_mean_silhouette_score_for_ks(self, ks: [int]):
         silhouette_avg = []
         for num_clusters in ks:
             # initialise kmeans
-            model = TimeSeriesKMeans(n_clusters=num_clusters, metric=self.__metric, max_iter=self.__max_iter,
+            model = TimeSeriesKMeans(n_clusters=num_clusters, metric=self.__metric,
+                                     metric_params=self.__metric_params, max_iter=self.__max_iter,
                                      random_state=self.__random_state)
             y_pred = model.fit_predict(self.__x_train)
 
@@ -461,7 +464,8 @@ class TimeSeriesKMeansClustering:
         sum_of_squared_distances = []
         for num_clusters in ks:
             # initialise kmeans
-            model = TimeSeriesKMeans(n_clusters=num_clusters, metric=self.__metric, max_iter=self.__max_iter,
+            model = TimeSeriesKMeans(n_clusters=num_clusters, metric=self.__metric, metric_params=self.__metric_params,
+                                     max_iter=self.__max_iter,
                                      random_state=self.__random_state)
             model.fit(self.__x_train)
             sum_of_squared_distances.append(model.inertia_)
