@@ -250,7 +250,9 @@ class AgglomerativeTSClustering:
             counts[i] = current_count
 
         linkage_matrix = np.column_stack([self.model.children_, self.model.distances_, counts]).astype(float)
-        print("Additional distance metrics: " + self.distance_constraint + ' & ' + str(self.sakoe_chiba_radius))
+
+        if self.distance_constraint is not None:
+            print("Additional distance metrics: " + self.distance_constraint + ' & ' + str(self.sakoe_chiba_radius))
 
         # Plot the corresponding dendrogram
         plt.rcParams.update({'figure.facecolor': 'white',
