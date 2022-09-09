@@ -91,7 +91,7 @@ class ContinuousSeries:
         height = 20
         number_of_plots = len(self.resampled_series)
 
-        plt.rcParams.update({'font.size': 15})
+        plt.rcParams.update({'figure.facecolor': 'white', 'figure.dpi': 150, 'font.size': 15})
         fig, axs = plt.subplots(number_of_plots, sharey=True, figsize=(width, height), squeeze=0)
 
         title = 'Resampled Time Series. Resample rule: ' \
