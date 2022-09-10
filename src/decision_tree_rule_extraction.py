@@ -62,11 +62,14 @@ class DecisionTreeRuleExtraction:
 
         """
         plt.rcParams.update({'figure.facecolor': 'white'})
-        plt.figure(figsize=(10, 5), dpi=150)
+        plt.figure(figsize=(20, 8), dpi=150)
         feature_imp = self.model.feature_importances_
         features = self.__get_list_of_features()
         pd.DataFrame({'Feature': features, 'Feature Importance': feature_imp}).plot.bar(x='Feature',
-                                                                                        y='Feature Importance')
+                                                                                        y='Feature Importance',
+                                                                                        fontsize=18,
+                                                                                        legend=False,
+                                                                                        figsize=(20, 8))
 
     def __get_list_of_features(self):
         return list(self.__x_train.columns)

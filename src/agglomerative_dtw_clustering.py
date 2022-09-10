@@ -84,7 +84,7 @@ class AgglomerativeTSClustering:
 
         self.distance_matrix = self.__calculate_distance_matrix()
         self.y_pred = self.model.fit_predict(self.distance_matrix)
-        self.no_clusters = max(self.y_pred)
+        self.no_clusters = max(self.y_pred)+1
         self.__calculate_silhouette_values()
 
     def plot_clusters_in_grid(self, y_label_substr: str, only_display_multiple_ts_clusters=True):
