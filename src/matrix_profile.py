@@ -8,6 +8,8 @@ from scipy.stats import stats
 
 
 class MatrixProfile:
+    label_font_size = 35
+
     def __init__(self, time_series, values_series: [float], motif_length_m: int):
         self.__index = time_series
         self.__values = values_series
@@ -79,18 +81,18 @@ class MatrixProfile:
 
         # show mp
         axs[mp_ax_idx].plot(self.__x_mp, self.mp[:, 0], linewidth=3, marker='o')
-        axs[mp_ax_idx].set_ylabel('Matrix Profile', fontsize=25)
+        axs[mp_ax_idx].set_ylabel('Matrix Profile', fontsize=self.label_font_size)
         axs[mp_ax_idx].axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
         axs[mp_ax_idx].axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
-        axs[mp_ax_idx].tick_params(axis='x', labelsize=25)
-        axs[mp_ax_idx].tick_params(axis='y', labelsize=25)
+        axs[mp_ax_idx].tick_params(axis='x', labelsize=self.label_font_size)
+        axs[mp_ax_idx].tick_params(axis='y', labelsize=self.label_font_size)
         plt.tight_layout()
-        plt.xlabel(overall_x_label, fontsize=25)
+        plt.xlabel(overall_x_label, fontsize=self.label_font_size)
         plt.show()
 
     def __plot_motif_on_series(self, values, axs, motif_idx, nearest_neighbor_idx, ts_y_label):
         axs.plot(self.__index, values, linewidth=3, marker='o')  # plot with time as index
-        axs.set_ylabel(ts_y_label, fontsize=25)
+        axs.set_ylabel(ts_y_label, fontsize=self.label_font_size)
         # highlight the motive with the lowest distance
         axs.plot(self.__index[motif_idx:motif_idx + self.__motif_length_m],
                  values[motif_idx:motif_idx + self.__motif_length_m],
@@ -100,8 +102,8 @@ class MatrixProfile:
                  linewidth=5, marker='o')
         axs.axvline(x=self.__x_mp[motif_idx], linestyle="dashed")
         axs.axvline(x=self.__x_mp[nearest_neighbor_idx], linestyle="dashed")
-        axs.tick_params(axis='x', labelsize=25)
-        axs.tick_params(axis='y', labelsize=25)
+        axs.tick_params(axis='x', labelsize=self.label_font_size)
+        axs.tick_params(axis='y', labelsize=self.label_font_size)
 
     # returns index of the matrix profile for the motif that is the least similar to anywhere else - a discord
     def least_similar_x(self):
@@ -127,9 +129,9 @@ class MatrixProfile:
                      + ', m=' + str(self.__motif_length_m))
 
         axs[0, 0].plot(self.__index, self.__values, linewidth=3, marker='o')  # plot ts with time as index
-        axs[0, 0].set_ylabel(y_label, fontsize=25)
-        axs[0, 0].tick_params(axis='x', labelsize=25)
-        axs[0, 0].tick_params(axis='y', labelsize=25)
+        axs[0, 0].set_ylabel(y_label, fontsize=self.label_font_size)
+        axs[0, 0].tick_params(axis='x', labelsize=self.label_font_size)
+        axs[0, 0].tick_params(axis='y', labelsize=self.label_font_size)
         # highlight the motifs
         for idx in list(motif_indices[0]):
             axs[0, 0].plot(self.__index[idx:idx + self.__motif_length_m],
@@ -140,14 +142,14 @@ class MatrixProfile:
         # plot mp if set to true
         if show_mp:
             axs[1, 0].plot(self.__x_mp, self.mp[:, 0], linewidth=3, marker='o')
-            axs[1, 0].set_ylabel('Matrix Profile', fontsize=25)
-            axs[1, 0].tick_params(axis='x', labelsize=25)
-            axs[1, 0].tick_params(axis='y', labelsize=25)
+            axs[1, 0].set_ylabel('Matrix Profile', fontsize=self.label_font_size)
+            axs[1, 0].tick_params(axis='x', labelsize=self.label_font_size)
+            axs[1, 0].tick_params(axis='y', labelsize=self.label_font_size)
 
-            #dashed lines
+            # dashed lines
             for idx in list(motif_indices[0]):
                 axs[1, 0].axvline(x=self.__index[idx], linestyle="dashed")
 
         plt.tight_layout()
-        plt.xlabel(x_label, fontsize=25)
+        plt.xlabel(x_label, fontsize=self.label_font_size)
         plt.show()
