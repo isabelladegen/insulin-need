@@ -97,6 +97,7 @@ class TimeSeriesKMeansClustering:
             columns for x full to be able to find the right TS in the np.array
             :param sampling:
         """
+        self.label_font_size = 20
         self.__n_clusters = n_clusters
         self.__scaler = scaler
         if self.__scaler is None:
@@ -249,7 +250,8 @@ class TimeSeriesKMeansClustering:
         plt.xlabel(self.__x_label)
         plt.show()
 
-    def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr):
+    def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr, show_title=True, show_legend=True,
+                                                        show_overall_labels=True):
         """Plots barrycenters with clusters as rows and columns collapsed into one row. Useful to see how IOB, COB and BG
         behave in each cluster
 
@@ -259,18 +261,19 @@ class TimeSeriesKMeansClustering:
             Part of the plot y label
         """
         no_clusters = self.model.n_clusters
-        no_dimensions = len(self.__cols_to_plot)
 
         # setup figure
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
-        fig_size = (10, no_clusters * 2)
+        fig_size = (10, no_clusters * 4)
         fig, axs = plt.subplots(nrows=no_clusters,
                                 ncols=1,
                                 sharey=True,
                                 sharex=True,
                                 figsize=fig_size, squeeze=0)
-        fig.suptitle("DBA k-means barrycenters. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
-                     + str(len(self.y_pred)))
+        if show_title:
+            fig.suptitle(
+                "DBA k-means barrycenters. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
+                + str(len(self.y_pred)))
 
         # clusters are on the rows
         for row_idx in range(no_clusters):
@@ -288,21 +291,25 @@ class TimeSeriesKMeansClustering:
                     axs[row_idx, 0].plot(bc.ravel(), "-", label=col)
 
                 axs[row_idx, 0].set_xticks(self.__x_ticks)
+                axs[row_idx, 0].tick_params(axis='x', labelsize=self.label_font_size)
+                axs[row_idx, 0].tick_params(axis='y', labelsize=self.label_font_size)
                 axs[row_idx, 0].grid(which='major', alpha=0.2, color='grey')
 
             # set y label for row with cluster information
-            axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()))
-
-        handles, labels = axs[0, 0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc='upper right')
-        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()),
+                                       fontsize=self.label_font_size)
+        if show_legend:
+            handles, labels = axs[0, 0].get_legend_handles_labels()
+            fig.legend(handles, labels, loc='upper right', fontsize=self.label_font_size)
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         plt.subplots_adjust(top=.9)
         # add overall x, y text
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
-        plt.ylabel("Y =" + y_label_substr + " values", labelpad=30)
-        plt.xlabel(self.__x_label)
+        if show_overall_labels:
+            plt.ylabel("Y =" + y_label_substr + " values", labelpad=3 * self.label_font_size, fontsize=self.label_font_size)
+            plt.xlabel(self.__x_label, labelpad=self.label_font_size, fontsize=self.label_font_size)
         plt.show()
 
     def plot_silhouette_blob_for_k(self, ks: [int]):
@@ -316,7 +323,7 @@ class TimeSeriesKMeansClustering:
         """
         no_clusters = len(ks)
         multiples_of_4 = int(len(ks) / 4)
-        no_rows =  1 if multiples_of_4 == 0 else multiples_of_4
+        no_rows = 1 if multiples_of_4 == 0 else multiples_of_4
         no_cols = 4
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
         max_k = max(ks)
