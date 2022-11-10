@@ -308,7 +308,8 @@ class TimeSeriesKMeansClustering:
         fig.add_subplot(111, frame_on=False)
         plt.tick_params(labelcolor="none", bottom=False, left=False)
         if show_overall_labels:
-            plt.ylabel("Y =" + y_label_substr + " values", labelpad=3 * self.label_font_size, fontsize=self.label_font_size)
+            plt.ylabel("Y =" + y_label_substr + " values", labelpad=3 * self.label_font_size,
+                       fontsize=self.label_font_size)
             plt.xlabel(self.__x_label, labelpad=self.label_font_size, fontsize=self.label_font_size)
         plt.show()
 
@@ -433,6 +434,17 @@ class TimeSeriesKMeansClustering:
         plt.ylabel('Mean silhouette score')
         plt.title('Silhouette score for k')
         plt.show()
+
+    def avg_silhouette_score(self):
+        """ Calculates avg_silhouette_score
+
+        Returns
+        -------
+        silhouette : float
+            Mean Silhouette Coefficient for all samples.
+
+        """
+        return silhouette_score(self.__x_train, self.y_pred, metric=self.__metric)
 
     def plot_sum_of_square_distances_for_k(self, ks: [int]):
         """Plots sum of square distances for all the given k
