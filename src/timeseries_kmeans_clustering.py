@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
+from scipy.signal import find_peaks
 from scipy.spatial.distance import cdist
 from sklearn.metrics import silhouette_samples
 from tslearn.barycenters import dtw_barycenter_averaging
@@ -251,7 +252,7 @@ class TimeSeriesKMeansClustering:
         plt.show()
 
     def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr, show_title=True, show_legend=True,
-                                                        show_overall_labels=True):
+                                                        show_overall_labels=True, sort_clusters=False):
         """Plots barycenters with clusters as rows and columns collapsed into one row. Useful to see how IOB, COB and BG
         behave in each cluster
 
@@ -276,28 +277,45 @@ class TimeSeriesKMeansClustering:
                 "DBA k-means barrycenters. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
                 + str(len(self.y_pred)))
 
-        # sort row_idx by no of time series starting with the smallest first
-        row_indices = range(no_clusters)  # list to be sorted
-        no_ts_in_ci = []  # list to sort row indices by
-        for row_idx in row_indices:
-            is_in_cluster_yi = (self.y_pred == row_idx)
-            no_ts_in_ci.append(is_in_cluster_yi.sum())
+        # sort row_idx
+        row_indices = range(no_clusters)
+        if sort_clusters:
+            # sort by second carb peak
+            indices_of_second_carb_peaks = []
+            list_carbs_1hour_earlier = []
+            for row_idx in row_indices:
+                # get carbs barycenter
+                carbs_signal = self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index("COB")]
+                # find peaks
+                carb_peaks, _ = find_peaks(carbs_signal, height=0.2)
+                index_of_second_peak = carb_peaks[1]
+                carbs_1h_earlier = carbs_signal[index_of_second_peak - 1]
+                indices_of_second_carb_peaks.append(index_of_second_peak)  # second peak in signal
+                list_carbs_1hour_earlier.append(carbs_1h_earlier)
 
-        # sorts row_indices by number of ts for that row
-        sorted_row_indices = [x for _, x in sorted(zip(no_ts_in_ci, row_indices), key=lambda pair: pair[0])]
+            # order first by index of second carb peak lower to higher
+            if len(set(indices_of_second_carb_peaks)) == 1:  # same index sort by higher carbs one hour earlier first
+                sorted_row_indices = [x for _, x in
+                                      sorted(zip(list_carbs_1hour_earlier, row_indices),
+                                             key=lambda pair: pair[0],
+                                             reverse=True)]
+            else:
+                sorted_row_indices = [x for _, x in
+                                      sorted(zip(indices_of_second_carb_peaks, row_indices), key=lambda pair: pair[0])]
+            row_indices = sorted_row_indices
 
         # clusters are on the rows
-        for plot_idx, row_idx in enumerate(sorted_row_indices):
+        for plot_idx, row_idx in enumerate(row_indices):
             is_in_cluster_yi = (self.y_pred == row_idx)
             ax = axs[plot_idx, 0]
 
-            # plot the barrycenter line and title
+            # plot the barycenter line and title
             for col_idx, col in enumerate(self.__cols_to_plot):
-                # a column for which the barrycenters has already been calculated for clustering
+                # a column for which the barycenters has already been calculated for clustering
                 if col in self.__x_train_column_names:
                     axs[plot_idx, 0].plot(
                         self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index(col)], "-", label=col)
-                else:  # calculate barrycenters for the none clustered cols
+                else:  # calculate barycenters for the none clustered cols
                     series_in_cluster_yi = self.__x_full[is_in_cluster_yi]
                     bc = dtw_barycenter_averaging(series_in_cluster_yi[:, :, col_idx])
                     ax.plot(bc.ravel(), "-", label=col)
@@ -306,13 +324,10 @@ class TimeSeriesKMeansClustering:
                 ax.tick_params(axis='x', labelsize=self.label_font_size)
                 ax.tick_params(axis='y', labelsize=self.label_font_size)
                 ax.grid(which='major', alpha=0.2, color='grey')
-                # ax.get_xaxis().set_visible(True)
-                # ax.get_yaxis().set_visible(True)
-                # ax.spines[:].set_visible(True)
 
             # set y label for row with cluster information, use idx to have nice cluster names from
-            ax.set_ylabel('Cluster ' + str(plot_idx +1) + '\n No TS = ' + str(is_in_cluster_yi.sum()),
-                                       fontsize=self.label_font_size)
+            ax.set_ylabel('Cluster ' + str(plot_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()),
+                          fontsize=self.label_font_size)
         if show_legend:
             handles, labels = axs[0, 0].get_legend_handles_labels()
             fig.legend(handles, labels, loc='upper right', fontsize=self.label_font_size)
@@ -504,3 +519,15 @@ class TimeSeriesKMeansClustering:
             model.fit(self.__x_train)
             sum_of_squared_distances.append(model.inertia_)
         return sum_of_squared_distances
+
+    # sorts clusters by number of time series
+    def __sort_by_number_of_ts(self, no_clusters):
+        row_indices = range(no_clusters)  # list to be sorted
+        no_ts_in_ci = []  # list to sort row indices by
+        for row_idx in row_indices:
+            is_in_cluster_yi = (self.y_pred == row_idx)
+            no_ts_in_ci.append(is_in_cluster_yi.sum())
+        # sorts row_indices by number of ts for that row
+        sorted_row_indices = [x for _, x in sorted(zip(no_ts_in_ci, row_indices), key=lambda pair: pair[0])]
+        row_indices = sorted_row_indices
+        return row_indices

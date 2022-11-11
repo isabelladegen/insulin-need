@@ -116,4 +116,4 @@ class TimeSeriesKMeansClusteringCrossValidation:
         """
         for model in self.n_fold_km:
             model.plot_barrycenters_of_different_cols_in_one_plot("", show_title=False, show_legend=False,
-                                                                  show_overall_labels=False)
+                                                                  show_overall_labels=False, sort_clusters=True)
