@@ -252,7 +252,7 @@ class TimeSeriesKMeansClustering:
 
     def plot_barrycenters_of_different_cols_in_one_plot(self, y_label_substr, show_title=True, show_legend=True,
                                                         show_overall_labels=True):
-        """Plots barrycenters with clusters as rows and columns collapsed into one row. Useful to see how IOB, COB and BG
+        """Plots barycenters with clusters as rows and columns collapsed into one row. Useful to see how IOB, COB and BG
         behave in each cluster
 
         Parameters
@@ -263,6 +263,7 @@ class TimeSeriesKMeansClustering:
         no_clusters = self.model.n_clusters
 
         # setup figure
+        plt.rcParams.update(plt.rcParamsDefault)
         plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
         fig_size = (10, no_clusters * 4)
         fig, axs = plt.subplots(nrows=no_clusters,
@@ -275,28 +276,42 @@ class TimeSeriesKMeansClustering:
                 "DBA k-means barrycenters. Clustered by " + ', '.join(self.__x_train_column_names) + ". No of TS "
                 + str(len(self.y_pred)))
 
-        # clusters are on the rows
-        for row_idx in range(no_clusters):
+        # sort row_idx by no of time series starting with the smallest first
+        row_indices = range(no_clusters)  # list to be sorted
+        no_ts_in_ci = []  # list to sort row indices by
+        for row_idx in row_indices:
             is_in_cluster_yi = (self.y_pred == row_idx)
+            no_ts_in_ci.append(is_in_cluster_yi.sum())
+
+        # sorts row_indices by number of ts for that row
+        sorted_row_indices = [x for _, x in sorted(zip(no_ts_in_ci, row_indices), key=lambda pair: pair[0])]
+
+        # clusters are on the rows
+        for plot_idx, row_idx in enumerate(sorted_row_indices):
+            is_in_cluster_yi = (self.y_pred == row_idx)
+            ax = axs[plot_idx, 0]
 
             # plot the barrycenter line and title
             for col_idx, col in enumerate(self.__cols_to_plot):
                 # a column for which the barrycenters has already been calculated for clustering
                 if col in self.__x_train_column_names:
-                    axs[row_idx, 0].plot(
+                    axs[plot_idx, 0].plot(
                         self.model.cluster_centers_[row_idx][:, self.__x_train_column_names.index(col)], "-", label=col)
                 else:  # calculate barrycenters for the none clustered cols
                     series_in_cluster_yi = self.__x_full[is_in_cluster_yi]
                     bc = dtw_barycenter_averaging(series_in_cluster_yi[:, :, col_idx])
-                    axs[row_idx, 0].plot(bc.ravel(), "-", label=col)
+                    ax.plot(bc.ravel(), "-", label=col)
 
-                axs[row_idx, 0].set_xticks(self.__x_ticks)
-                axs[row_idx, 0].tick_params(axis='x', labelsize=self.label_font_size)
-                axs[row_idx, 0].tick_params(axis='y', labelsize=self.label_font_size)
-                axs[row_idx, 0].grid(which='major', alpha=0.2, color='grey')
+                ax.set_xticks(self.__x_ticks)
+                ax.tick_params(axis='x', labelsize=self.label_font_size)
+                ax.tick_params(axis='y', labelsize=self.label_font_size)
+                ax.grid(which='major', alpha=0.2, color='grey')
+                # ax.get_xaxis().set_visible(True)
+                # ax.get_yaxis().set_visible(True)
+                # ax.spines[:].set_visible(True)
 
-            # set y label for row with cluster information
-            axs[row_idx, 0].set_ylabel('Cluster ' + str(row_idx + 1) + '\n No TS = ' + str(is_in_cluster_yi.sum()),
+            # set y label for row with cluster information, use idx to have nice cluster names from
+            ax.set_ylabel('Cluster ' + str(plot_idx +1) + '\n No TS = ' + str(is_in_cluster_yi.sum()),
                                        fontsize=self.label_font_size)
         if show_legend:
             handles, labels = axs[0, 0].get_legend_handles_labels()

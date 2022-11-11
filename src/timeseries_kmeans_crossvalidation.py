@@ -110,7 +110,7 @@ class TimeSeriesKMeansClusteringCrossValidation:
             result.append(model.avg_silhouette_score())
         return result
 
-    def plot_barrycenters_for_each_model(self):
+    def plot_barycenters_for_each_model(self):
         """Calculates avg silhouette score for each of the n_fold models.
 
         """
