@@ -61,9 +61,9 @@ Remember you MUST NOT CHECK-IN ANY DATA into a public repository or share with a
 Most of the code in this project will read a preprocessed version of the original zip file.
 To create those versions run the following scripts:
 
-- [](src/scripts/write_blood_glucose_df.py) edit the script and 
-- [](src/scripts/write_device_status_df_dedubed.py) *recommended*
-- [](src/scripts/write_device_status_df.py)
+- [src/scripts/write_blood_glucose_df.py](src/scripts/write_blood_glucose_df.py) edit the script and 
+- [src/scripts/write_device_status_df_dedubed.py](src/scripts/write_device_status_df_dedubed.py) *recommended*
+- [src/scripts/write_device_status_df.py](src/scripts/write_device_status_df.py)
 
 These scripts do some preprocessing: they cleanup the timestamp and set the time to UTC and they drop records with no 
 timestamp. 
