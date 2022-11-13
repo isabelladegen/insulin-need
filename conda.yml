@@ -20,9 +20,6 @@ dependencies:
   - plotly
   - python-graphviz
   - tslearn # not available on M1
-#  - sktime   # gives conflicts -> move to pip
-#  - tsfresh # gives conflicts -> move to pip
   - pip
   - pip:
-##    - matrixprofile -> doesn't work on M1 max
     - stumpy # doesn't work if conda-forge installed, gives error Numba needs NumPy 1.20 or less even when forcing numba >0.55
