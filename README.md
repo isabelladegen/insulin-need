@@ -1,8 +1,6 @@
 # Finding temporal patterns in insulin needs for people with Type 1 Diabetes
 
-This project is the source code for the study published in the following paper. 
-
-Please cite as following in your work:
+This project is the source code for the study published in the [paper](https://doi.org/10.48550/arxiv.2211.07393) below. Please cite as following in your work:
 
 BibTeX:
 ```
