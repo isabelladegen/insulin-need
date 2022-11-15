@@ -1,8 +1,22 @@
 # Finding temporal patterns in insulin needs for people with Type 1 Diabetes
 
-This project is the source code that was used for the study published in paper:
+This project is the source code for the study published in the following paper. 
 
-TODO...
+Please cite as following in your work:
+
+BibTeX:
+```
+@article{Degen2022,
+   author = {Isabella Degen and Zahraa S. Abdallah},
+   doi = {10.48550/arxiv.2211.07393},
+   month = {11},
+   title = {Temporal patterns in insulin needs for Type 1 diabetes},
+   url = {https://arxiv.org/abs/2211.07393v1},
+   year = {2022},
+}
+```
+Formatted citation:
+<div class="csl-entry">Degen, I., &#38; Abdallah, Z. S. (2022). <i>Temporal patterns in insulin needs for Type 1 diabetes</i>. https://doi.org/10.48550/arxiv.2211.07393</div>
 
 ## Structure
 ```
