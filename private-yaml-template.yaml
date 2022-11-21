@@ -3,7 +3,7 @@
 # 2. fill in the properties
 
 # full path to the folder containing the zip files downloaded from Dropbox - DO NOT SHARE THIS DATA
-openAPS_data_path : 'set relative or absolute pat to folder that contains the OpenAPS zip files'
+openAPS_data_path : 'provide absolute path to folder that contains the downloaded OpenAPS Data Commons zip files as string'
 
 #this property decides if the scripts that write the preprocessed data write a file per person (FALSE) or a single
 #.csv file containing everyone's data

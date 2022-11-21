@@ -44,7 +44,7 @@ class MultipleZipAndContinuousSeries:
         result_zip = {}
         for zip_id in self.__zip_ids:
             # read file
-            file = device_status_file_path_for('../data/perid', zip_id)
+            file = device_status_file_path_for(Configuration().perid_data_folder, zip_id)
             full_df = read_flat_device_status_df_from_file(file, Configuration())
 
             # create resampled series for each value column

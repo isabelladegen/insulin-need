@@ -20,7 +20,7 @@ Formatted citation:
 ```
 .
 └── insulin-need/
-    ├── data (AUTO CREATED AND NEVER CHECKED IN)/
+    ├── data (AUTO CREATED. DO NOT CHECK IN!)/
     │   └── perid/
     │       ├── p1
     │       ├── p2
@@ -45,7 +45,7 @@ Conda was used as Python environment. You can use the following commands to setu
 2. Update conda env ```conda env update -n tmp-22 --file conda.yml --prune```
 
 *Notes:*
-1. *the code was run and tested on a mac x86_64 and partially on a mac arm64 (M1 mac). Specifically tslearn did not run natively on the M1 mac* 
+1. *the code was run and tested on a mac x86_64 and partially on a mac arm64 (M1 mac). ````tslearn``` has no native M1 package yet, the conda file has instructions on how to install ```tslearn``` on an M1 mac* 
 2. *the [conda env file](conda.yml) is setup to use the latest possible version of all dependencies under Python 3.9. The exact versions of libraries used for the paper are here: [requirements.txt](/requirements.txt)*
 
 ### IDE
@@ -55,45 +55,42 @@ This should also work in the Community Edition of PyCharm.
 
 ### Configuration
 
-There's only one configuration variable that you need to set which is the location to the folder that contains your copy
-of the OpenAPS Commons data still as zip files:
+You need to configure where your downloaded OpenAPS Data Commons dataset is (still as zip files):
 
 1. Rename the [private-yaml-template.yaml](private-yaml-template.yaml)  to ```private.yaml```
 2. Change the ```openAPS_data_path``` property in the file to contain a string to the folder where your copy of the OpenAPS data is
 
-*Note: both the data and the private.yaml file must not be checked into git!*
+**Note: do not check in the data into git!**
 
 ### Data
-To run any of the code you require the OpenAPS Commons dataset. 
+To run most of the code you require the OpenAPS Commons dataset. 
 You can request access from the [OpenAPS](https://openaps.org/outcomes/data-commons/) website.
 
-You will need to manually setup the data folder and configurations on your machine as the data folder is ignored. 
-Remember you MUST NOT CHECK-IN ANY DATA into a public repository or share with anybody!
+Once you have the data and have provided the path in the ```private.yaml``` configuration file 
+you're ready to generate the preprocessed versions of the original zip file.
 
-Most of the code in this project will read a preprocessed version of the original zip file.
-To create those versions run the following scripts:
+You have to options - choose based on your needs. Most code assumes you have the files for option 1 created:
+1. leave the ```flat_file: FALSE``` in the ```private.yaml``` file and a preprocessed version per id gets created in a folder called ```data/perid```
+2. change the ```flat_file: TRUE``` in the ```private.yaml``` file and a preprocessed version containing all id gets created
 
-- [src/scripts/write_blood_glucose_df.py](src/scripts/write_blood_glucose_df.py) edit the script and 
-- [src/scripts/write_device_status_df_dedubed.py](src/scripts/write_device_status_df_dedubed.py) *recommended*
+To create the preprocessed data files run the following scripts:
+
+- [src/scripts/write_blood_glucose_df.py](src/scripts/write_blood_glucose_df.py) -> creates ```bg_df.csv``` files
+- [src/scripts/write_device_status_df_dedubed.py](src/scripts/write_device_status_df_dedubed.py) *recommended* -> creates ```device_status_dedubed.csv```
 - [src/scripts/write_device_status_df.py](src/scripts/write_device_status_df.py)
 
-These scripts do some preprocessing: they cleanup the timestamp and set the time to UTC and they drop records with no 
-timestamp. 
-The files reading the device status only work for n=116 files atm.
+These scripts do some preprocessing: they transform the timestamps to uniform UTC timestamps and drop records with no 
+timestamp.   
+The files reading the device status only work for the n=116 files from the OpenAPS system (not Loop or AndroidAPS, just yet).
 It reads the columns configured in the ```device_status_col_type``` property in the 
 [configurations.py](/src/configurations.py) file.
-Due to it not reading all the columns the file will have duplicated entries, the [](src/scripts/write_device_status_df_dedubed.py)
-removes those duplicated entries.
-
-*Note: for the scripts to work you have to have the original data folder configured. 
-The scripts will create a ```data```  and ```data/perid``` folder.
-Those folders are ignored as they MUST not be checked-in!*
+Given not all columns are read there will be duplicated entries. The [](src/scripts/write_device_status_df_dedubed.py)
+removes those duplicated entries!
 
 ### Tests
-To check that everything is working run all the tests in [tests](/tests) if they all pass your environment is correctly setup
-and you have all the required data files.
+Once you have the data generated you can run the tests o check that everything is working as it should [tests](/tests) if they all pass your environment is correctly setup.
 
-*Note some tests use real data and are ignored anywhere where the data files/path are not available.*
+*Note some tests use real data and are ignored anywhere where the data files/path are not available. And some tests are by default ignored because they take a really long time to run, you have to run them manually too*
 
 
 
