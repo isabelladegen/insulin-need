@@ -1,7 +1,7 @@
 #others
 private.yaml
 
-data/
+/data
 testingdata/
 experiment-results/
 wandb/
