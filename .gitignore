@@ -1,7 +1,9 @@
 #others
 private.yaml
 
-/data
+#notebooks usually contain data that needs to stay private
+notebooks/
+data/
 testingdata/
 experiment-results/
 wandb/

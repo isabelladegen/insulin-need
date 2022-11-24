@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - matplotlib
   - seaborn
-  - pandas
+  - pandas=1.4 # in pandas 1.5 the DataFrame.resample / first methods work differently and drop the original time_col in the resampled df which produces different results and number of days, fixing this for reproducibility of the paper
   - numba>=0.55
   - scikit-learn
   - seaborn
@@ -24,4 +24,4 @@ dependencies:
   - pip
   - pip:
     - stumpy # doesn't work if conda-forge installed, gives error Numba needs NumPy 1.20 or less even when forcing numba >0.55
-#    - git+https://github.com/tslearn-team/tslearn.git
+#   - git+https://github.com/tslearn-team/tslearn.git #should be tslearn-0.5.2

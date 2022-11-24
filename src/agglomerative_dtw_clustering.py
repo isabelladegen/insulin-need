@@ -234,7 +234,7 @@ class AgglomerativeTSClustering:
         ax.set_ylabel(str(no_non_single_clusters) + " non single ts clusters. Total " + str(self.no_clusters))
         plt.show()
 
-    def plot_dendrogram(self, truncated_mode: str = None, p: int = None, show_contracted: bool = False,
+    def plot_dendrogram(self, truncated_mode: str = None, p: int = 30, show_contracted: bool = False,
                         show_leave_count=False, count_sort=False, distance_sort=False, no_labels=False):
         """Plots dendrogram of clusters
         """
