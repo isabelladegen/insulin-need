@@ -28,6 +28,7 @@ Formatted citation:
     ├── src/
     │   ├── scripts
     │   └── <various py files>
+    ├── examples/ -> contains example Jupyter notebooks that show how to use the code
     ├── tests
     ├── README.md
     ├── conda.yml -> use to create Python env
@@ -91,6 +92,13 @@ removes those duplicated entries!
 Once you have the data generated you can run the tests o check that everything is working as it should [tests](/tests) if they all pass your environment is correctly setup.
 
 *Note some tests use real data and are ignored anywhere where the data files/path are not available. And some tests are by default ignored because they take a really long time to run, you have to run them manually too*
+
+
+## Examples
+
+There are [example notebooks](examples/) available that show how to create heatmaps, k-means clustering and the matrix profile.
+They include many examples on how to read the data files and resample the data to your needs.
+
 
 
 
