@@ -47,7 +47,7 @@ Conda was used as Python environment. You can use the following commands to setu
 
 *Notes:*
 1. *the code was run and tested on a mac x86_64 and partially on a mac arm64 (M1 mac). ```tslearn``` has no native M1 package yet, the conda file has instructions on how to install ```tslearn``` on an M1 mac* 
-2. *the [conda env file](conda.yml) is setup to use the latest possible version of all dependencies under Python 3.9. The exact versions of libraries used for the paper are here: for os-64 Mac [requirements.txt](/requirements.txt) & for M1 Mac[requirements-m1.txt](/requirements-m1.txt)*
+2. *the [conda env file](conda.yml) is setup to use the latest possible version of all dependencies under Python 3.9. The exact versions of libraries used for the paper are here: for os-64 Mac [requirements.txt](/requirements.txt) & for M1 Mac [requirements-m1.txt](/requirements-m1.txt)*
 
 ### IDE
 The code was developed, tested and run using the PyCharm Professional IDE. 
