@@ -43,11 +43,12 @@ Formatted citation:
 Conda was used as Python environment. You can use the following commands to setup a conda env with all the required dependencies:
 
 1. Create conda env ```conda env create -f conda.yml``` and ```conda activate tmp-22```
-2. Update conda env ```conda env update -n tmp-22 --file conda.yml --prune```
+2. If you add new dependencies to the [conda.yml](conda.yml) file you can update the env ```conda env update -n tmp-22 --file conda.yml --prune```
 
 *Notes:*
-1. *the code was run and tested on a mac x86_64 and partially on a mac arm64 (M1 mac). ```tslearn``` has no native M1 package yet, the conda file has instructions on how to install ```tslearn``` on an M1 mac* 
-2. *the [conda env file](conda.yml) is setup to use the latest possible version of all dependencies under Python 3.9. The exact versions of libraries used for the paper are here: for os-64 Mac [requirements.txt](/requirements.txt) & for M1 Mac [requirements-m1.txt](/requirements-m1.txt)*
+1. *The code was run and tested on a Mac x86_64 and on a Mac arm64 (M1 mac)* 
+2. *The [conda.yml](conda.yml) file uses the latest versions of all dependencies, fixing only Python to 3.9 and pandas to 1.4. 
+If the test don't run for you, and you think it's dependency related, you can compare your versions ```conda list``` with the versions originally used [requirements.txt (osx_64)](/requirements.txt) or [requirements-m1.txt (osx_arm64)](/requirements-m1.txt)*
 
 ### IDE
 The code was developed, tested and run using the PyCharm Professional IDE. 

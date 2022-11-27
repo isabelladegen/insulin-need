@@ -20,8 +20,7 @@ dependencies:
   - python-graphviz
   - llvmlite
   - llvmdev
-  - tslearn # not yet natively available on M1, comment this out and use the pip git install below if on M1!
+  - tslearn
   - pip
   - pip:
     - stumpy # doesn't work if conda-forge installed, gives error Numba needs NumPy 1.20 or less even when forcing numba >0.55
-#   - git+https://github.com/tslearn-team/tslearn.git #should be tslearn-0.5.2
