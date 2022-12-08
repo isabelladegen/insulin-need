@@ -1,8 +1,4 @@
-from calendar import calendar
-from math import ceil
-
 import numpy as np
-import pandas
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, ticker

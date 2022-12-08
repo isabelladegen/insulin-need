@@ -67,17 +67,19 @@ def continuous_subseries(df, min_length, interval_in_min, time_col, value_col: s
         resampled = group_sub_df.resample(str(interval_in_min) + 'min', on=time_col).first()
 
         # drop start and end days that don't have a full min_length of data
-        earliest_date = resampled[time_col].min().date()
-        rows_for_first_day = resampled.loc[pd.to_datetime(resampled[time_col]).dt.date == earliest_date]
+        earliest_date = resampled.index.min().date()
+        rows_for_first_day = resampled.loc[resampled.index.date == earliest_date]
         if len(rows_for_first_day) < daily_min_length:  # not a full day of data
-            resampled = pd.concat([resampled, rows_for_first_day]).drop_duplicates(keep=False)
+            # remove incomplete first day from resampled
+            resampled.drop(rows_for_first_day.index, inplace=True)
             # drop that date from the originally sampled grouped df too
             group_sub_df = group_sub_df.drop(group_sub_df[pd.to_datetime(group_sub_df[time_col]).dt.date == earliest_date].index)
 
-        latest_date = resampled[time_col].max().date()
-        rows_for_last_day = resampled.loc[pd.to_datetime(resampled[time_col]).dt.date == latest_date]
+        latest_date = resampled.index.max().date()
+        rows_for_last_day = resampled.loc[resampled.index.date == latest_date]
         if len(rows_for_last_day) < daily_min_length:  # not a full day of data
-            resampled = pd.concat([resampled, rows_for_last_day]).drop_duplicates(keep=False)
+            # remove incomplete last day from resampled
+            resampled.drop(rows_for_last_day.index, inplace=True)
             # drop that date from the originally sampled grouped df too
             group_sub_df = group_sub_df.drop(group_sub_df[pd.to_datetime(group_sub_df[time_col]).dt.date == latest_date].index)
 

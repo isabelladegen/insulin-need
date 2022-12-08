@@ -1,4 +1,4 @@
-name: tmp-22
+name: tmp-22-p5
 channels:
   - conda-forge
   - maxibor
@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - matplotlib
   - seaborn
-  - pandas=1.4 # in pandas 1.5 the DataFrame.resample / first methods work differently and drop the original time_col in the resampled df which produces different results and number of days, fixing this for reproducibility of the paper
+  - pandas
   - numba>=0.55
   - scikit-learn
   - seaborn

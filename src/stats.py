@@ -51,8 +51,3 @@ class Months(Sampling):
     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
     sample_rule = '1D'  # the frequency of the regular time series after resampling
     resolution = Resolution.DaysMonths
-
-
-class Stats:
-    def __init__(self, zip_id: str):
-        self.zip_id = zip_id
