@@ -1,4 +1,4 @@
-name: tmp-22-p5
+name: tmp-22
 channels:
   - conda-forge
   - maxibor
