@@ -49,15 +49,15 @@ class ReadRecord:
         result = self.df[keep_cols].copy()
         result.dropna(how='all', inplace=True)  # drop row if all columns are empty
         result.drop_duplicates(inplace=True, ignore_index=True)
-        result.insert(loc=0, column=GeneralisedCols.id.value, value=self.zip_id)
-        result[GeneralisedCols.id.value] = result[GeneralisedCols.id.value].astype("string")
+        result.insert(loc=0, column=GeneralisedCols.id, value=self.zip_id)
+        result[GeneralisedCols.id] = result[GeneralisedCols.id].astype("string")
         if self.system is not None:
-            result.insert(loc=0, column=GeneralisedCols.system.value, value=self.system)
-            if self.system == OpenAPSConfigs.system_name.value:
-                result.rename(columns={OpenAPSConfigs.iob.value: GeneralisedCols.iob.value,
-                                       OpenAPSConfigs.cob.value: GeneralisedCols.cob.value,
-                                       OpenAPSConfigs.bg.value: GeneralisedCols.bg.value,
-                                       OpenAPSConfigs.datetime.value: GeneralisedCols.datetime.value}, inplace=True)
+            result.insert(loc=0, column=GeneralisedCols.system, value=self.system)
+            if self.system == OpenAPSConfigs.system_name:
+                result.rename(columns={OpenAPSConfigs.iob: GeneralisedCols.iob,
+                                       OpenAPSConfigs.cob: GeneralisedCols.cob,
+                                       OpenAPSConfigs.bg: GeneralisedCols.bg,
+                                       OpenAPSConfigs.datetime: GeneralisedCols.datetime}, inplace=True)
         return result
 
     def add(self, df):

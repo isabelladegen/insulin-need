@@ -18,7 +18,7 @@ def load_private_yaml():
 
 
 # values for openAPS
-class OpenAPSConfigs(Enum):
+class OpenAPSConfigs(str, Enum):
     iob = 'openaps/enacted/IOB'
     cob = 'openaps/enacted/COB'
     bg = 'openaps/enacted/bg'
@@ -27,7 +27,7 @@ class OpenAPSConfigs(Enum):
 
 
 # generalised configs across systems
-class GeneralisedCols(Enum):
+class GeneralisedCols(str, Enum):
     iob = 'iob'
     cob = 'cob'
     bg = 'bg'
@@ -99,8 +99,8 @@ class Configuration:
 
     # columns to keep
     # TODO use generalised cols instead
-    keep_columns = [OpenAPSConfigs.datetime.value, OpenAPSConfigs.iob.value, OpenAPSConfigs.bg.value,
-                    OpenAPSConfigs.cob.value]
+    keep_columns = [OpenAPSConfigs.datetime, OpenAPSConfigs.iob, OpenAPSConfigs.bg,
+                    OpenAPSConfigs.cob]
 
     # Android APS has different format
     android_aps_zip = 'AndroidAPS Uploader.zip'

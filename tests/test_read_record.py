@@ -13,10 +13,10 @@ no_rows = len(data['F'])
 no_columns = len(data)
 data_df = pd.DataFrame(data)
 
-data_with_open_aps_col_names = {OpenAPSConfigs.iob.value: ['1', '2', '3', 't', 'c'],
-                                OpenAPSConfigs.cob.value: [20, 21, 18, 18, 19],
-                                OpenAPSConfigs.bg.value: [10, 4.5, 5.8, 5.8, 7.6],
-                                OpenAPSConfigs.datetime.value: ['d', 'p', 'f', 'g', 'l']
+data_with_open_aps_col_names = {OpenAPSConfigs.iob: ['1', '2', '3', 't', 'c'],
+                                OpenAPSConfigs.cob: [20, 21, 18, 18, 19],
+                                OpenAPSConfigs.bg: [10, 4.5, 5.8, 5.8, 7.6],
+                                OpenAPSConfigs.datetime: ['d', 'p', 'f', 'g', 'l']
                                 }
 
 
@@ -93,13 +93,13 @@ def test_returns_only_unique_rows_for_the_columns_kept():
 
 def test_adds_system_column_to_df():
     record = ReadRecordBuilder().with_id(zip_id).with_df(data_df).build()
-    record.system = OpenAPSConfigs.system_name.value
+    record.system = OpenAPSConfigs.system_name
 
     column_to_keep = ['T']
     df = record.df_with_id(keep_cols=column_to_keep)
 
-    assert_that(df.columns, has_item(GeneralisedCols.system.value))
-    assert_that((df[GeneralisedCols.system.value] == OpenAPSConfigs.system_name.value).all())
+    assert_that(df.columns, has_item(GeneralisedCols.system))
+    assert_that((df[GeneralisedCols.system] == OpenAPSConfigs.system_name).all())
 
 
 def test_doesnt_add_system_column_when_not_provided():
@@ -109,19 +109,19 @@ def test_doesnt_add_system_column_when_not_provided():
     df = record.df_with_id(keep_cols=column_to_keep)
 
     assert_that(len(df.columns), is_(len(column_to_keep) + 1))
-    assert_that(df.columns, has_item(GeneralisedCols.id.value))
+    assert_that(df.columns, has_item(GeneralisedCols.id))
 
 
 def test_renames_columns_into_standard_names_when_system_provided():
     record = ReadRecordBuilder().with_id(zip_id).with_df(pd.DataFrame(data_with_open_aps_col_names)).build()
-    record.system = OpenAPSConfigs.system_name.value
+    record.system = OpenAPSConfigs.system_name
 
     df = record.df_with_id()
 
-    assert_that(df.columns, has_item(GeneralisedCols.iob.value))
-    assert_that(df.columns, has_item(GeneralisedCols.cob.value))
-    assert_that(df.columns, has_item(GeneralisedCols.bg.value))
-    assert_that(df.columns, has_item(GeneralisedCols.datetime.value))
+    assert_that(df.columns, has_item(GeneralisedCols.iob))
+    assert_that(df.columns, has_item(GeneralisedCols.cob))
+    assert_that(df.columns, has_item(GeneralisedCols.bg))
+    assert_that(df.columns, has_item(GeneralisedCols.datetime))
 
 
 def test_doesnt_rename_columns_into_standard_names_when_system_not_provided():
@@ -129,9 +129,9 @@ def test_doesnt_rename_columns_into_standard_names_when_system_not_provided():
 
     df = record.df_with_id()
 
-    assert_that(df.columns, has_item(OpenAPSConfigs.iob.value))
-    assert_that(df.columns, has_item(OpenAPSConfigs.cob.value))
-    assert_that(df.columns, has_item(OpenAPSConfigs.bg.value))
-    assert_that(df.columns, has_item(OpenAPSConfigs.datetime.value))
+    assert_that(df.columns, has_item(OpenAPSConfigs.iob))
+    assert_that(df.columns, has_item(OpenAPSConfigs.cob))
+    assert_that(df.columns, has_item(OpenAPSConfigs.bg))
+    assert_that(df.columns, has_item(OpenAPSConfigs.datetime))
 
 # TODO what happens with dateindex?
