@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timezone
 
 import numpy as np
@@ -6,11 +5,8 @@ import pandas as pd
 import pytest
 from hamcrest import *
 
-from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries, Resolution, Cols, TimeFeatures
-from src.helper import device_status_file_path_for
 from src.preprocess import number_of_interval_in_days
-from src.read import read_flat_device_status_df_from_file
 from tests.helper.BgDfBuilder import create_time_stamps
 
 # build fake data

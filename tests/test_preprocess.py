@@ -161,7 +161,7 @@ def test_returns_list_of_continuous_series_of_length_x_and_sampled_at_interval()
 
     # Two series sampled at interval i and of at least length min_length
     times1 = create_time_stamps(date1, min_length, interval)
-    times3 = create_time_stamps(date3, 2*min_length, interval)  # a longer timeseries
+    times3 = create_time_stamps(date3, 2 * min_length, interval)  # a longer timeseries
     # One series less than length min_length but with more samples to force frequency test
     times2 = create_time_stamps(date2, min_length - 2, interval)  # this will not be long enough
     times2_more = create_time_stamps(date2_more, min_length - 2, interval)
@@ -189,14 +189,14 @@ def test_removes_days_that_have_only_partial_data():
     partial_start_day = datetime(year=2018, month=12, day=25, hour=23, minute=0, tzinfo=timezone.utc)
 
     # TS that starts on the 25 but the 25th does not have a full days data and should therefore be excluded
-    times = create_time_stamps(partial_start_day, 3*min_daily_length, max_gap_in_min)
+    times = create_time_stamps(partial_start_day, 3 * min_daily_length, max_gap_in_min)
 
     df = pd.DataFrame(data={time_col: times})
 
     result = continuous_subseries(df, min_length, max_gap_in_min, time_col)
 
-    assert_that(len(result), is_(1)) # there's  no gap
-    assert_that(result[0].shape[0], is_(min_length)) # removed the dates that didn't have fully sampled data
+    assert_that(len(result), is_(1))  # there's  no gap
+    assert_that(result[0].shape[0], is_(min_length))  # removed the dates that didn't have fully sampled data
 
 
 def test_ensures_there_is_a_value_and_time_stamp_at_min_interval():

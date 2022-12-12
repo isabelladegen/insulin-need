@@ -1,6 +1,6 @@
 from hamcrest import *
 
-from src.configurations import Configuration, TestConfiguration
+from src.configurations import Configuration, TestConfiguration, OpenAPSConfigs
 from os import path
 
 
@@ -37,3 +37,12 @@ def test_returns_all_time_cols():
     assert_that(cols, has_length(8))
     assert_that(cols, has_item('openaps/iob/timestamp'))
     assert_that(cols, has_item('openaps/iob/lastBolusTime'))
+
+
+def test_returns_cols_to_keep():
+    cols = TestConfiguration().keep_columns
+
+    assert_that(cols, has_item(OpenAPSConfigs.cob.value))
+    assert_that(cols, has_item(OpenAPSConfigs.iob.value))
+    assert_that(cols, has_item(OpenAPSConfigs.bg.value))
+    assert_that(cols, has_item(OpenAPSConfigs.datetime.value))

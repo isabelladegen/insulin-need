@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from typing import List
+
 import pandas as pd
 import yaml
 from os import path
+from enum import Enum
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '..'))
 
@@ -13,6 +16,24 @@ def load_private_yaml():
         config = yaml.safe_load(f)
     return config
 
+
+# values for openAPS
+class OpenAPSConfigs(Enum):
+    iob = 'openaps/enacted/IOB'
+    cob = 'openaps/enacted/COB'
+    bg = 'openaps/enacted/bg'
+    datetime = 'openaps/enacted/timestamp'
+    system_name = 'OpenAPS'
+
+
+# generalised configs across systems
+class GeneralisedCols(Enum):
+    iob = 'iob'
+    cob = 'cob'
+    bg = 'bg'
+    id = 'id'
+    datetime = 'datetime'
+    system = 'system'
 
 @dataclass
 class Configuration:
@@ -30,6 +51,9 @@ class Configuration:
     android_upload_info = 'UploadInfo.csv'
     bg_file = 'bg_df.csv'
     device_file = 'device_status_dedubed.csv'
+    irregular_iob_cob_bg_file = 'irregular_iob_cob_bg.csv'
+    hourly_iob_cob_bg_file = 'hourly_iob_cob_bg.csv'
+    daily_iob_cob_bg_file = 'daily_iob_cob_bg.csv'
 
     # device status files
     device_status_csv_file_start = '_devicestatus'
@@ -72,6 +96,11 @@ class Configuration:
     flat_device_status_116_file = data_folder + flat_device_status_116_file_name
     dedub_flat_device_status_116_file_name = 'device_status_116_df_dedubed.csv'
     dedub_flat_device_status_116_file = data_folder + dedub_flat_device_status_116_file_name
+
+    # columns to keep
+    # TODO use generalised cols instead
+    keep_columns = [OpenAPSConfigs.datetime.value, OpenAPSConfigs.iob.value, OpenAPSConfigs.bg.value,
+                    OpenAPSConfigs.cob.value]
 
     # Android APS has different format
     android_aps_zip = 'AndroidAPS Uploader.zip'

@@ -42,6 +42,17 @@ def test_writes_multiple_read_records_as_flat_dataframe():
     assert_that(sub_df_for_id(df, id3).equals(df3))
 
 
+def test_writes_flat_dataframe_containing_only_columns_kept():
+    # write csv files
+    keep_columns = ['time']
+    write_read_record(records, True, folder, flat_file_name, keep_cols=keep_columns)
+
+    # read from written file
+    df = read_df_from_csv(flat_file_path)
+
+    assert_that(df.columns, contains_exactly('id', 'time'))
+
+
 def test_writes_csv_per_id():
     # write csv files
     write_read_record(records, False, per_id_folder, flat_file_name)
@@ -54,6 +65,20 @@ def test_writes_csv_per_id():
         files_for_id = [file for file in filepaths if record.zip_id in file]
         df = read_df_from_csv(files_for_id[0])
         assert_that(record.df_with_id().equals(df))
+
+
+def test_writes_csv_per_id_only_containing_columns_kept():
+    # write csv files
+    keep_columns = ['time']
+    write_read_record(records, False, per_id_folder, flat_file_name, keep_cols=keep_columns)
+
+    # read from written files
+    filepaths = per_id_files()
+
+    for record in records:
+        files_for_id = [file for file in filepaths if record.zip_id in file]
+        df = read_df_from_csv(files_for_id[0])
+        assert_that(df.columns, contains_exactly('id', 'time'))
 
 
 def per_id_files():

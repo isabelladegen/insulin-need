@@ -62,3 +62,18 @@ def test_drops_rows_with_nan_value():
 
     # assert resulting dataframe contains both df 1 and df2
     assert_that(result_df.shape, is_((df1.shape[0] - nans, 3)))
+
+
+def test_only_keeps_columns_specified():
+    zip_id1 = '3456'
+    df1 = BgDfBuilder().build()
+    test_record1 = ReadRecordBuilder().with_id(zip_id1).with_df(df1).build()
+
+    zip_id2 = '345'
+    df2 = BgDfBuilder().build()
+    test_record2 = ReadRecordBuilder().with_id(zip_id2).with_df(df2).build()
+
+    keep_columns = ['bg']
+    result_df = as_flat_dataframe([test_record1, test_record2], True, keep_cols=keep_columns)
+
+    assert_that(result_df.columns, contains_exactly('id', 'bg'))

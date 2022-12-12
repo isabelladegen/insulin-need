@@ -39,6 +39,7 @@ days_of_week = range(0, 7)
 
 class ContinuousSeries:
 
+    # takes irregular df and creates regular, resampled series out of value col
     def __init__(self, df: pd.DataFrame,
                  min_days_of_data: int,
                  max_interval_between_reading: int,

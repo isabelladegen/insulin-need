@@ -5,11 +5,12 @@ from src.read import ReadRecord
 
 
 # takes a list of ReadRecords and creates one flat dataframe adding zip_id as id column
-def as_flat_dataframe(records: [ReadRecord], drop_na: bool = False):
+# only keeps_cols specified, all if set to None which is default
+def as_flat_dataframe(records: [ReadRecord], drop_na: bool = False, keep_cols=None):
     result = None
     for record in records:
         # get df with id column
-        df = record.df_with_id()
+        df = record.df_with_id(keep_cols=keep_cols)
         if df is None:
             continue
 

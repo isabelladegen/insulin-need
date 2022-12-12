@@ -35,3 +35,8 @@ def bg_file_path_for(folder, zip_id):
 def device_status_file_path_for(folder, zip_id):
     files = files_for_id(folder, zip_id)
     return Path(list(filter(lambda x: Configuration().device_file in x, files))[0])
+
+
+def iob_cob_bg_file(folder, zip_id):
+    files = files_for_id(folder, zip_id)
+    return Path(list(filter(lambda x: Configuration().device_file in x, files))[0])

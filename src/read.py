@@ -9,34 +9,55 @@ from pathlib import Path
 import logging
 import pandas as pd
 
-from src.configurations import Configuration
+from src.configurations import Configuration, GeneralisedCols, OpenAPSConfigs
 
 
 # Data object that keeps the information from reading each data zip file
 @dataclass
 class ReadRecord:
     zip_id: str = None  # patient id
+    is_android_upload: bool = False  # set to True if from android upload, False otherwise
+    system: str = None  # can be used for system specific files to indicate the system
     df: pd.DataFrame = None  # dataframe
     has_no_files: bool = False  # true if the specified file to read was empty or did not exist
+
+    # calculated fields
     number_of_entries_files: int = 0  # number of entries files found
     number_of_rows: int = 0  # number of rows in total
     number_of_rows_without_nan: int = 0
     number_of_rows_with_nan: int = 0
     earliest_date: str = ''  # oldest date in series
     newest_date: str = ''  # newest date in series
-    is_android_upload: bool = False  # set to True if from android upload, False otherwise
 
-    # helper method to set read records for no bg files
+    # helper method to set read records if there are no files
     def zero_files(self):
         self.has_no_files = True
 
     # return its own dataframe with the id added
-    def df_with_id(self):
+    # keep cols is a list is None keep all column, otherwise only specified column
+    def df_with_id(self, keep_cols=None):
         if self.df is None:
             return None
-        result = self.df.copy()
-        result.insert(loc=0, column='id', value=self.zip_id)
-        result['id'] = result['id'].astype("string")
+        if keep_cols is None:
+            keep_cols = self.df.columns
+
+        missing_cols = [col for col in keep_cols if col not in self.df.columns]
+        if missing_cols:
+            print(f"Columns not in file for zip {self.zip_id}: {missing_cols}")
+            self.df[missing_cols] = None
+
+        result = self.df[keep_cols].copy()
+        result.dropna(how='all', inplace=True)  # drop row if all columns are empty
+        result.drop_duplicates(inplace=True, ignore_index=True)
+        result.insert(loc=0, column=GeneralisedCols.id.value, value=self.zip_id)
+        result[GeneralisedCols.id.value] = result[GeneralisedCols.id.value].astype("string")
+        if self.system is not None:
+            result.insert(loc=0, column=GeneralisedCols.system.value, value=self.system)
+            if self.system == OpenAPSConfigs.system_name.value:
+                result.rename(columns={OpenAPSConfigs.iob.value: GeneralisedCols.iob.value,
+                                       OpenAPSConfigs.cob.value: GeneralisedCols.cob.value,
+                                       OpenAPSConfigs.bg.value: GeneralisedCols.bg.value,
+                                       OpenAPSConfigs.datetime.value: GeneralisedCols.datetime.value}, inplace=True)
         return result
 
     def add(self, df):
@@ -155,6 +176,7 @@ def read_entries_file_into_df(archive, file, read_record, config):
 
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
+    read_record.system = OpenAPSConfigs.system_name.value  # TODO set to appropriate system once others read too
     specific_cols_dic = config.device_status_col_type
     if specific_cols_dic:  # preprocess reading
         with archive.open(file, mode="r") as header_context:
@@ -183,6 +205,7 @@ def headers_in_file(file):
     return header.columns
 
 
+# reads OpenAPS device status file
 def read_device_status_file_and_convert_date(actual_headers, config, file_to_read):
     time_cols = [k for k in config.time_cols() if k in actual_headers]  # check columns that are in this file
     df = pd.read_csv(file_to_read,
