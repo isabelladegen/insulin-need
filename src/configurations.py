@@ -6,6 +6,8 @@ import yaml
 from os import path
 from enum import Enum
 
+from src.resampling import Resampling
+
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '..'))
 
 
@@ -35,6 +37,7 @@ class GeneralisedCols(str, Enum):
     datetime = 'datetime'
     system = 'system'
 
+
 @dataclass
 class Configuration:
     config = load_private_yaml()
@@ -51,9 +54,6 @@ class Configuration:
     android_upload_info = 'UploadInfo.csv'
     bg_file = 'bg_df.csv'
     device_file = 'device_status_dedubed.csv'
-    irregular_iob_cob_bg_file = 'irregular_iob_cob_bg.csv'
-    hourly_iob_cob_bg_file = 'hourly_iob_cob_bg.csv'
-    daily_iob_cob_bg_file = 'daily_iob_cob_bg.csv'
 
     # device status files
     device_status_csv_file_start = '_devicestatus'
@@ -120,6 +120,9 @@ class Configuration:
     def time_cols(self):
         return ['created_at', 'openaps/enacted/deliverAt', 'pump/clock'] \
                + [k for k in self.device_status_col_type.keys() if 'time' in str(k).lower()]
+
+    def flat_preprocessed_file_for(self, sampling: Resampling):
+        return path.join(self.data_folder, sampling.csv_file_name())
 
 
 # Configuration to use for unit tests. This turns Wandb logging off.
