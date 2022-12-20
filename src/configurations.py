@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 import pandas as pd
 import yaml
@@ -59,7 +58,9 @@ class GeneralisedCols(str, Enum):
 @dataclass
 class Resampling:
     max_gap_in_min = None
-    # how frequent readings need to be: one every 60=every hour; one reading 180=every three hours
+    # how big the gap between two datetime stamps can be
+    min_no_samples_per_interval = None
+    # how many samples at max_gap_per_min intervals there have to be
     sample_rule = None
     # the frequency of the regular time series after resampling: 1H a reading every hour, 1D a reading every day
     description = 'Base'
@@ -175,8 +176,37 @@ class Configuration:
     # Android APS has different format
     android_aps_zip = 'AndroidAPS Uploader.zip'
 
-    def common_cols(self):
+    @staticmethod
+    def common_cols():
+        # this should probably move to OpenAPS as it is OpenAPS specific
         return ['id', 'created_at', 'device']
+
+    @staticmethod
+    def info_columns():
+        # returns the columns that have other info but not values to resample
+        return [GeneralisedCols.datetime, GeneralisedCols.id, GeneralisedCols.system]
+
+    @staticmethod
+    def value_columns_to_resample():
+        # returns all columns with values that need resampling
+        return [GeneralisedCols.iob.value, GeneralisedCols.cob.value, GeneralisedCols.bg.value]
+
+    @staticmethod
+    def resampled_value_columns():
+        # returns the columns that
+        return [GeneralisedCols.mean_iob.value,
+                GeneralisedCols.mean_cob.value,
+                GeneralisedCols.mean_bg.value,
+                GeneralisedCols.min_iob.value,
+                GeneralisedCols.min_cob.value,
+                GeneralisedCols.min_bg.value,
+                GeneralisedCols.max_iob.value,
+                GeneralisedCols.max_cob.value,
+                GeneralisedCols.max_bg.value,
+                GeneralisedCols.std_iob.value,
+                GeneralisedCols.std_cob.value,
+                GeneralisedCols.std_bg.value,
+                ]
 
     def enacted_cols(self):
         return [k for k in self.device_status_col_type.keys() if 'enacted' in k]

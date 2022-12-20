@@ -126,8 +126,8 @@ def test_ensures_sampling_is_frequent_enough_for_all_variates():
     just_iob = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d16, d17,
                                                  d20, d21, d22, d23, d24, d25, d26, d27
                                                  ],
-                GeneralisedCols.iob.value: [iob] * 16,
-                GeneralisedCols.cob.value: [cob] * 3 + [nan] * 5 + [cob] * 8,  # not enough values for day 1
+                GeneralisedCols.iob.value: [iob] * 16,  # sufficient values
+                GeneralisedCols.cob.value: [cob] * 3 + [nan] * 5 + [cob] * 8,  # not enough values for day 1 and 2
                 GeneralisedCols.bg.value: [bg] * 8 + [nan] * 5 + [bg] * 3,  # not enough values for day 2
                 GeneralisedCols.system.value: ['bla'] * 16,
                 GeneralisedCols.id.value: [zip_id1] * 16
