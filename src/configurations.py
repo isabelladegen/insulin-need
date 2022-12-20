@@ -31,6 +31,7 @@ class ResamplingAggCols(str, Enum):
     max = 'max'
     mean = 'mean'
     std = 'std'
+    count = 'count'
 
 
 class GeneralisedCols(str, Enum):
@@ -51,6 +52,9 @@ class GeneralisedCols(str, Enum):
     std_iob = iob + ' ' + ResamplingAggCols.std.value
     std_cob = cob + ' ' + ResamplingAggCols.std.value
     std_bg = bg + ' ' + ResamplingAggCols.std.value
+    count_iob = iob + ' ' + ResamplingAggCols.count.value
+    count_cob = cob + ' ' + ResamplingAggCols.count.value
+    count_bg = bg + ' ' + ResamplingAggCols.count.value
     datetime = 'datetime'
     system = 'system'
 
@@ -63,9 +67,12 @@ class Resampling:
     # how many samples at max_gap_per_min intervals there have to be
     sample_rule = None
     # the frequency of the regular time series after resampling: 1H a reading every hour, 1D a reading every day
+    needs_max_gap_checking = False
+    # if max gap in min is smaller than the dample rule time period (e.g  180min and 1D) than max_gap_checking is needed
+
     description = 'Base'
     agg_cols = [ResamplingAggCols.min.value, ResamplingAggCols.max.value, ResamplingAggCols.mean.value,
-                ResamplingAggCols.std.value]
+                ResamplingAggCols.std.value, ResamplingAggCols.count.value]
 
     general_agg_cols_dictionary = {GeneralisedCols.id.value: 'first',
                                    GeneralisedCols.system.value: 'first',
@@ -90,6 +97,7 @@ class Hourly(Resampling):
     max_gap_in_min = 60
     # there needs to be a reading at least every hour for the data points to be resampled for that hour
     sample_rule = '1H'
+    needs_max_gap_checking = False
     description = 'hourly resampled'
 
     @staticmethod
@@ -102,6 +110,7 @@ class Daily(Resampling):
     max_gap_in_min = 180
     # a reading every three hours for a daily resampling to be created
     sample_rule = '1D'
+    needs_max_gap_checking = True
     description = 'daily resampled'
 
     @staticmethod
@@ -184,7 +193,7 @@ class Configuration:
     @staticmethod
     def info_columns():
         # returns the columns that have other info but not values to resample
-        return [GeneralisedCols.datetime, GeneralisedCols.id, GeneralisedCols.system]
+        return [GeneralisedCols.datetime.value, GeneralisedCols.id.value, GeneralisedCols.system.value]
 
     @staticmethod
     def value_columns_to_resample():
