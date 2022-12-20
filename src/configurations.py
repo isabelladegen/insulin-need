@@ -6,8 +6,6 @@ import yaml
 from os import path
 from enum import Enum
 
-from src.resampling import Resampling
-
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '..'))
 
 
@@ -19,8 +17,8 @@ def load_private_yaml():
     return config
 
 
-# values for openAPS
 class OpenAPSConfigs(str, Enum):
+    # values for openAPS
     iob = 'openaps/enacted/IOB'
     cob = 'openaps/enacted/COB'
     bg = 'openaps/enacted/bg'
@@ -28,14 +26,86 @@ class OpenAPSConfigs(str, Enum):
     system_name = 'OpenAPS'
 
 
-# generalised configs across systems
+class ResamplingAggCols(str, Enum):
+    # colum name and name of aggregation function
+    min = 'min'
+    max = 'max'
+    mean = 'mean'
+    std = 'std'
+
+
 class GeneralisedCols(str, Enum):
+    # generalised configs across systems
     iob = 'iob'
     cob = 'cob'
     bg = 'bg'
     id = 'id'
+    mean_iob = iob + ' ' + ResamplingAggCols.mean.value
+    mean_cob = cob + ' ' + ResamplingAggCols.mean.value
+    mean_bg = bg + ' ' + ResamplingAggCols.mean.value
+    min_iob = iob + ' ' + ResamplingAggCols.min.value
+    min_cob = cob + ' ' + ResamplingAggCols.min.value
+    min_bg = bg + ' ' + ResamplingAggCols.min.value
+    max_iob = iob + ' ' + ResamplingAggCols.max.value
+    max_cob = cob + ' ' + ResamplingAggCols.max.value
+    max_bg = bg + ' ' + ResamplingAggCols.max.value
+    std_iob = iob + ' ' + ResamplingAggCols.std.value
+    std_cob = cob + ' ' + ResamplingAggCols.std.value
+    std_bg = bg + ' ' + ResamplingAggCols.std.value
     datetime = 'datetime'
     system = 'system'
+
+
+@dataclass
+class Resampling:
+    max_gap_in_min = None
+    # how frequent readings need to be: one every 60=every hour; one reading 180=every three hours
+    sample_rule = None
+    # the frequency of the regular time series after resampling: 1H a reading every hour, 1D a reading every day
+    description = 'Base'
+    agg_cols = [ResamplingAggCols.min.value, ResamplingAggCols.max.value, ResamplingAggCols.mean.value,
+                ResamplingAggCols.std.value]
+
+    general_agg_cols_dictionary = {GeneralisedCols.id.value: 'first',
+                                   GeneralisedCols.system.value: 'first',
+                                   }
+
+    @staticmethod
+    def csv_file_name():
+        return ''
+
+
+@dataclass
+class Irregular(Resampling):
+    description = 'irregular'
+
+    @staticmethod
+    def csv_file_name():
+        return 'irregular_iob_cob_bg.csv'
+
+
+@dataclass
+class Hourly(Resampling):
+    max_gap_in_min = 60
+    # there needs to be a reading at least every hour for the data points to be resampled for that hour
+    sample_rule = '1H'
+    description = 'hourly resampled'
+
+    @staticmethod
+    def csv_file_name():
+        return 'hourly_iob_cob_bg.csv'
+
+
+@dataclass
+class Daily(Resampling):
+    max_gap_in_min = 180
+    # a reading every three hours for a daily resampling to be created
+    sample_rule = '1D'
+    description = 'daily resampled'
+
+    @staticmethod
+    def csv_file_name():
+        return 'daily_iob_cob_bg.csv'
 
 
 @dataclass

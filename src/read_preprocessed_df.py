@@ -1,11 +1,10 @@
 import pandas as pd
 
-from src.configurations import Configuration, GeneralisedCols
+from src.configurations import Configuration, GeneralisedCols, Resampling
 from src.helper import preprocessed_file_for
-from src.resampling import Resampling
 
 
-class PreprocessedDataFrame:
+class ReadPreprocessedDataFrame:
     """
         Class for reading preprocessed csv files into pandas df and configure sampling resolution for other classes to use
 

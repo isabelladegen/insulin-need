@@ -1,10 +1,8 @@
 import os
-from src.configurations import Configuration
+from src.configurations import Configuration, Irregular, Hourly, Daily
 from src.helper import files_for_id, bg_file_path_for, device_status_file_path_for, preprocessed_file_for
 import pytest
 from hamcrest import *
-
-from src.resampling import Irregular, Hourly, Daily
 
 zip_id = '14092221'
 

@@ -7,8 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.configurations import Configuration
-from src.resampling import Resampling
+from src.configurations import Configuration, Resampling
 from src.stats import Sampling
 
 

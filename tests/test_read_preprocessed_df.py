@@ -4,15 +4,14 @@ import pytest
 from hamcrest import *
 from pandas import DatetimeTZDtype
 
-from src.configurations import GeneralisedCols, Configuration
-from src.preprocessed_df import PreprocessedDataFrame
-from src.resampling import Irregular
+from src.configurations import GeneralisedCols, Configuration, Irregular
+from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
 
 @pytest.mark.skipif(not os.path.isfile(Configuration().flat_preprocessed_file_for(Irregular())),
                     reason="reads real data")
 def test_reads_flat_file_for_irregular_sampling():
-    processed_df = PreprocessedDataFrame(sampling=Irregular())
+    processed_df = ReadPreprocessedDataFrame(sampling=Irregular())
     df = processed_df.df
 
     assert_that(df.columns, has_item(GeneralisedCols.iob))
@@ -35,7 +34,7 @@ def test_reads_flat_file_for_irregular_sampling():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_reads_persons_file_for_irregular_sampling():
     zip_id = '14092221'
-    df = PreprocessedDataFrame(sampling=Irregular(), zip_id=zip_id).df
+    df = ReadPreprocessedDataFrame(sampling=Irregular(), zip_id=zip_id).df
 
     assert_that(df.columns, has_item(GeneralisedCols.iob))
     assert_that(df.columns, has_item(GeneralisedCols.cob))

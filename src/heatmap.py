@@ -5,8 +5,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-from src.configurations import GeneralisedCols
-from src.resampling import Resampling
+from src.configurations import GeneralisedCols, Resampling
 
 
 @dataclass
@@ -49,12 +48,6 @@ class Heatmap:
             ----------
             df : DataFrame
                 Data to plot in heathmap
-
-            rows : [GeneralisedCols]
-                Columns of df to plot, e.g IOB, COB, BG
-
-            columns : [zip_ids]
-                List of ids to plot
 
             sampling : Resampling
                 What the time series are resampled as for descriptive strings

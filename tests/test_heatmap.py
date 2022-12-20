@@ -6,10 +6,9 @@ import pandas as pd
 import pytest
 from hamcrest import *
 
-from src.configurations import Configuration, GeneralisedCols
+from src.configurations import Configuration, GeneralisedCols, Irregular
 from src.heatmap import Heatmap, Months, Weekdays, Hours
-from src.preprocessed_df import PreprocessedDataFrame
-from src.resampling import Irregular
+from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
 irregular_sampling = Irregular()
 t1 = datetime(year=2021, month=1, day=10, hour=0, minute=0, tzinfo=timezone.utc)
@@ -139,7 +138,7 @@ def test_doesnt_show_title_if_set_to_false():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_multivariate_heatmap_for_irregular_sampled_file():
     zip_id = '14092221'
-    df = PreprocessedDataFrame(sampling=irregular_sampling, zip_id=zip_id).df
+    df = ReadPreprocessedDataFrame(sampling=irregular_sampling, zip_id=zip_id).df
 
     heatmap = Heatmap(df, irregular_sampling)
 
