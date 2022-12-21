@@ -36,13 +36,12 @@ def test_returns_irregular_hourly_or_daily_iob_cob_bg_file_for_id():
     folder = Configuration().perid_data_folder
 
     irregular_file_name = preprocessed_file_for(folder, zip_id, Irregular()).name
-    # hourly_file_name = preprocessed_file_for(folder, zip_id, Hourly()).name
-    # daily_file_name = preprocessed_file_for(folder, zip_id, Daily()).name
+    hourly_file_name = preprocessed_file_for(folder, zip_id, Hourly()).name
+    daily_file_name = preprocessed_file_for(folder, zip_id, Daily()).name
 
     assert_that(irregular_file_name, is_(Irregular.csv_file_name()))
-    # TODO comment once files exist
-    # assert_that(hourly_file_name, is_(Configuration().hourly_iob_cob_bg_file))
-    # assert_that(daily_file_name, is_(Configuration().daily_iob_cob_bg_file))
+    assert_that(hourly_file_name, is_(Hourly.csv_file_name()))
+    assert_that(daily_file_name, is_(Daily.csv_file_name()))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")

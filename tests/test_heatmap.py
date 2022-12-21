@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from hamcrest import *
 
-from src.configurations import Configuration, GeneralisedCols, Irregular
+from src.configurations import Configuration, GeneralisedCols, Irregular, Hourly, Daily
 from src.heatmap import Heatmap, Months, Weekdays, Hours
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
@@ -143,5 +143,43 @@ def test_plots_multivariate_heatmap_for_irregular_sampled_file():
     heatmap = Heatmap(df, irregular_sampling)
 
     heatmap.plot_heatmap(plot_rows=[GeneralisedCols.iob, GeneralisedCols.cob, GeneralisedCols.bg],
-                                        x_axis=Months(),
-                                        y_axis=Weekdays())
+                         x_axis=Months(),
+                         y_axis=Weekdays())
+
+
+def test_plots_multivariate_heatmap_for_hourly_sampled_file():
+    zip_id = '14092221'
+    sampling = Hourly()
+    df = ReadPreprocessedDataFrame(sampling=sampling, zip_id=zip_id).df
+
+    heatmap = Heatmap(df, sampling)
+
+    cols_to_plot = [GeneralisedCols.mean_iob.value, GeneralisedCols.mean_cob.value, GeneralisedCols.mean_bg.value]
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Months(),
+                         y_axis=Weekdays())
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Hours(),
+                         y_axis=Weekdays())
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Hours(),
+                         y_axis=Months())
+
+
+def test_plots_multivariate_heatmap_for_daily_sampled_file():
+    zip_id = '14092221'
+    sampling = Daily()
+    df = ReadPreprocessedDataFrame(sampling=sampling, zip_id=zip_id).df
+
+    heatmap = Heatmap(df, sampling)
+
+    cols_to_plot = [GeneralisedCols.mean_iob.value, GeneralisedCols.mean_cob.value, GeneralisedCols.mean_bg.value]
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Months(),
+                         y_axis=Weekdays())
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Hours(),
+                         y_axis=Weekdays())
+    heatmap.plot_heatmap(plot_rows=cols_to_plot,
+                         x_axis=Hours(),
+                         y_axis=Months())
