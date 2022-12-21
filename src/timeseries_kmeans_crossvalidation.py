@@ -1,16 +1,6 @@
 import numpy as np
-from matplotlib import pyplot as plt
-import matplotlib.cm as cm
-from scipy.spatial.distance import cdist
-from sklearn.metrics import silhouette_samples
-from tslearn.barycenters import dtw_barycenter_averaging
-from tslearn.clustering import TimeSeriesKMeans, silhouette_score
-from tslearn.metrics import cdist_soft_dtw_normalized, cdist_dtw
-from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScalerMinMax
+from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from tslearn.utils import to_time_series_dataset, to_time_series
-
-# Time series implementation of ts_silhouette_samples
 from src.stats import DailyTimeseries, Sampling
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 

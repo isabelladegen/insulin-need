@@ -70,10 +70,10 @@ class Heatmap:
 
             Parameters
             ----------
-            plot_rows : []
+            plot_rows : [str]
                 Columns of df to plot as rows. Each column in the list will create a new heatmap on a new row.
 
-            zip_ids : []
+            zip_ids : [str]
                 Ids in the GeneralisedCols.id column of the df to plot.
                 Can be used to plot multiple zip_ids at the same time in the column of the grid of heatmaps.
                 If empty, there's only one column in the graph.
@@ -151,7 +151,7 @@ class Heatmap:
 
         # row labels
         for ax, row in zip(axes[:, 0], plot_rows):
-            ax.set_ylabel(row)
+            ax.set_ylabel(str(row))
 
         fig.tight_layout()
         plt.show()
