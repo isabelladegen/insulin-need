@@ -212,7 +212,7 @@ def test_turns_irregular_df_into_regular_hourly_sampled_df():
     assert_that(end_row[GeneralisedCols.count_cob].values[0], is_(0))
     assert_that(two_middle_row[GeneralisedCols.count_cob].values[0], is_(1))
 
-    assert_that(np.isnan(beginning_row[GeneralisedCols.count_bg].values[0]))
+    assert_that(beginning_row[GeneralisedCols.count_bg].values[0], is_(0))
     assert_that(end_row[GeneralisedCols.count_bg].values[0], is_(1))
     assert_that(two_middle_row[GeneralisedCols.count_bg].values[0], is_(2))
 
@@ -261,7 +261,6 @@ def test_turns_irregular_df_into_regular_hourly_sampled_df():
     assert_that(two_middle_row[GeneralisedCols.std_bg].values[0], is_(7.707))
 
 
-
 def test_can_deal_with_empty_dataframe():
     nan_list = [np.NaN] * 3
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
@@ -278,7 +277,72 @@ def test_can_deal_with_empty_dataframe():
     df = ResampleDataFrame(df_irregular).resample_to(Daily())
 
     config = Configuration()
-    assert_that(df.shape, is_((0, len(config.info_columns()) + len(config.resampled_value_columns()))))
+    expected_number_of_columns = len(config.info_columns()) + len(config.resampled_value_columns()) + len(
+        config.resampling_count_columns())
+    assert_that(df.shape, is_((0, expected_number_of_columns)))
+
+
+def test_returns_none_value_columns_first_for_empty_df():
+    nan_list = [np.NaN]
+    t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
+    empty_data = {GeneralisedCols.datetime.value: [t1],
+                  GeneralisedCols.iob.value: nan_list,
+                  GeneralisedCols.cob.value: nan_list,
+                  GeneralisedCols.bg.value: nan_list,
+                  GeneralisedCols.system.value: nan_list,
+                  GeneralisedCols.id.value: nan_list
+                  }
+    df_irregular = pd.DataFrame(empty_data)
+    df = ResampleDataFrame(df_irregular).resample_to(Daily())
+
+    config = Configuration()
+    columns = list(df.columns)
+    expected_info_columns = config.info_columns()
+    assert_that(columns[0], is_(expected_info_columns[0]))  # datetime first
+    assert_that(columns[1], is_(expected_info_columns[1]))  # id second
+    assert_that(columns[2], is_(expected_info_columns[2]))  # system third
+
+
+def test_returns_none_value_columns_first():
+    values = [10.0]
+    t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
+    empty_data = {GeneralisedCols.datetime.value: [t1],
+                  GeneralisedCols.iob.value: values,
+                  GeneralisedCols.cob.value: values,
+                  GeneralisedCols.bg.value: values,
+                  GeneralisedCols.system.value: values,
+                  GeneralisedCols.id.value: values
+                  }
+    df_irregular = pd.DataFrame(empty_data)
+    df = ResampleDataFrame(df_irregular).resample_to(Hourly())
+
+    config = Configuration()
+    columns = list(df.columns)
+    expected_info_columns = config.info_columns()
+    assert_that(columns[0], is_(expected_info_columns[0]))  # datetime first
+    assert_that(columns[1], is_(expected_info_columns[1]))  # id second
+    assert_that(columns[2], is_(expected_info_columns[2]))  # system third
+
+
+def test_counts_as_integer_types():
+    values = [5.5, 10.9, np.NaN]
+    t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
+    t2 = datetime(year=2019, month=1, day=10, hour=1, minute=55, tzinfo=timezone.utc)
+    t3 = datetime(year=2019, month=1, day=10, hour=2, minute=5, tzinfo=timezone.utc)
+    empty_data = {GeneralisedCols.datetime.value: [t1, t2, t3],
+                  GeneralisedCols.iob.value: values,
+                  GeneralisedCols.cob.value: [np.NaN, np.NaN, np.NaN],
+                  GeneralisedCols.bg.value: [np.NaN, np.NaN, np.NaN],
+                  GeneralisedCols.system.value: values,
+                  GeneralisedCols.id.value: values
+                  }
+    df_irregular = pd.DataFrame(empty_data)
+    df = ResampleDataFrame(df_irregular).resample_to(Hourly())
+
+    config = Configuration()
+    types_of_count_columns = set(df[config.resampling_count_columns()].dtypes)
+    assert_that(len(types_of_count_columns), is_(1))
+    assert_that(str(list(types_of_count_columns)[0]), is_('int64'))
 
 
 def test_some_rounding_values():

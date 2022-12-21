@@ -202,7 +202,7 @@ class Configuration:
 
     @staticmethod
     def resampled_value_columns():
-        # returns the columns that
+        # returns the columns for resampled values
         return [GeneralisedCols.mean_iob.value,
                 GeneralisedCols.mean_cob.value,
                 GeneralisedCols.mean_bg.value,
@@ -215,6 +215,13 @@ class Configuration:
                 GeneralisedCols.std_iob.value,
                 GeneralisedCols.std_cob.value,
                 GeneralisedCols.std_bg.value,
+                ]
+
+    @staticmethod
+    def resampling_count_columns():
+        return [GeneralisedCols.count_iob.value,
+                GeneralisedCols.count_cob.value,
+                GeneralisedCols.count_bg.value
                 ]
 
     def enacted_cols(self):

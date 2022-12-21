@@ -1,4 +1,4 @@
-from src.configurations import Configuration
+from src.configurations import Configuration, Irregular
 from src.preprocess import dedub_device_status_dataframes
 from src.read import read_all_device_status
 from src.write import write_read_record
@@ -12,10 +12,9 @@ def main():
     folder = config.data_folder if as_flat_file else config.perid_data_folder
     result = read_all_device_status(config)
     de_dub_result = dedub_device_status_dataframes(result)
-    # resample irregular, hourly, daily - dedub resampling
 
     # write irregular
-    write_read_record(de_dub_result, as_flat_file, folder, config.irregular_iob_cob_bg_file,
+    write_read_record(de_dub_result, as_flat_file, folder, Irregular.csv_file_name(),
                       keep_cols=config.keep_columns)
 
 

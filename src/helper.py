@@ -41,4 +41,5 @@ def device_status_file_path_for(folder, zip_id):
 def preprocessed_file_for(folder, zip_id: str, sampling: Resampling):
     files = files_for_id(folder, zip_id)
     name = sampling.csv_file_name()
-    return Path(list(filter(lambda x: name in x, files))[0])
+    files_matching_name = list(filter(lambda x: name in x, files))
+    return Path(files_matching_name[0]) if files_matching_name else None

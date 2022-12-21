@@ -43,3 +43,14 @@ def test_returns_irregular_hourly_or_daily_iob_cob_bg_file_for_id():
     # TODO comment once files exist
     # assert_that(hourly_file_name, is_(Configuration().hourly_iob_cob_bg_file))
     # assert_that(daily_file_name, is_(Configuration().daily_iob_cob_bg_file))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_none_if_irregular_file_for_id_does_not_exist():
+    id_with_no_irregular_file = '80373992'
+
+    file_name = preprocessed_file_for(Configuration().perid_data_folder, id_with_no_irregular_file, Irregular())
+
+    assert_that(file_name, is_(none()))
+
+

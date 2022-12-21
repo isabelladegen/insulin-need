@@ -31,6 +31,7 @@ class ResampleDataFrame:
                 What the time series needs to be resampled to
         """
         cols_to_resample = self.__config.value_columns_to_resample()
+        columns = self.__config.info_columns() + self.__config.resampled_value_columns() + self.__config.resampling_count_columns()
 
         # resample by value column to avoid resampling over missing values in some of the value columns
         resulting_df = None
@@ -98,7 +99,6 @@ class ResampleDataFrame:
                 resulting_df = resulting_df.combine_first(resampled_df)
 
         if resulting_df is None:
-            columns = self.__config.info_columns() + self.__config.resampled_value_columns()
             return pd.DataFrame(columns=columns)
 
         # ensure columns are as expected
@@ -130,7 +130,17 @@ class ResampleDataFrame:
         resulting_df[GeneralisedCols.std_iob] = resulting_df[GeneralisedCols.std_iob].apply(self.__round_numbers)
         resulting_df[GeneralisedCols.std_cob] = resulting_df[GeneralisedCols.std_cob].apply(self.__round_numbers)
         resulting_df[GeneralisedCols.std_bg] = resulting_df[GeneralisedCols.std_bg].apply(self.__round_numbers)
-        return resulting_df
+
+        # add missing columns
+        missing_columns = list(set(columns) - set(resulting_df.columns))
+        resulting_df[missing_columns] = None
+
+        # change count columns to int
+        resulting_df[self.__config.resampling_count_columns()] = resulting_df[
+            self.__config.resampling_count_columns()].fillna(0)
+
+        # reorder columns
+        return resulting_df.loc[:, columns]
 
     @staticmethod
     def __round_numbers(x):
