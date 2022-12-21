@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -7,7 +8,8 @@ import pytest
 from hamcrest import *
 from numpy import nan
 
-from src.configurations import GeneralisedCols, Daily, Hourly, Configuration
+from src.configurations import GeneralisedCols, Daily, Hourly, Configuration, Irregular
+from src.read_preprocessed_df import ReadPreprocessedDataFrame
 from src.resampling import ResampleDataFrame
 
 # test data:
@@ -324,6 +326,32 @@ def test_returns_none_value_columns_first():
     assert_that(columns[2], is_(expected_info_columns[2]))  # system third
 
 
+def test_can_deal_with_single_day_of_data():
+    values = [10.0]*8
+    t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
+    t2 = datetime(year=2019, month=1, day=10, hour=4, minute=5, tzinfo=timezone.utc)
+    t3 = datetime(year=2019, month=1, day=10, hour=7, minute=5, tzinfo=timezone.utc)
+    t4 = datetime(year=2019, month=1, day=10, hour=10, minute=5, tzinfo=timezone.utc)
+    t5 = datetime(year=2019, month=1, day=10, hour=13, minute=5, tzinfo=timezone.utc)
+    t6 = datetime(year=2019, month=1, day=10, hour=15, minute=5, tzinfo=timezone.utc)
+    t7 = datetime(year=2019, month=1, day=10, hour=18, minute=5, tzinfo=timezone.utc)
+    t8 = datetime(year=2019, month=1, day=10, hour=21, minute=5, tzinfo=timezone.utc)
+    data = {GeneralisedCols.datetime.value: [t1, t2, t3, t4, t5, t6, t7, t8],
+                  GeneralisedCols.iob.value: values,
+                  GeneralisedCols.cob.value: values,
+                  GeneralisedCols.bg.value: values,
+                  GeneralisedCols.system.value: values,
+                  GeneralisedCols.id.value: values
+                  }
+    df_irregular = pd.DataFrame(data)
+    df = ResampleDataFrame(df_irregular).resample_to(Daily())
+
+    config = Configuration()
+    columns = config.info_columns() + config.resampled_value_columns() + config.resampling_count_columns()
+    assert_that(df.shape[0], is_(1))
+    assert_that(list(df.columns), is_(columns))
+
+
 def test_counts_as_integer_types():
     values = [5.5, 10.9, np.NaN]
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
@@ -354,3 +382,13 @@ def test_some_rounding_values():
     assert_that(rounded[1], is_(expect_rounded[1]))
     assert_that(rounded[2], is_(expect_rounded[2]))
     assert_that(rounded[3], is_(expect_rounded[3]))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_resampling_on_real_data():
+    test_id = '49796612'
+    df = ReadPreprocessedDataFrame(sampling=Irregular(), zip_id=test_id).df
+
+    resampled_df = ResampleDataFrame(df).resample_to(Daily())
+
+    assert_that(resampled_df, is_(not_none()))

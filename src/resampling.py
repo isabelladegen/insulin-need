@@ -39,14 +39,18 @@ class ResampleDataFrame:
             sub_columns = self.__config.info_columns() + [column]
             sub_df = self.__df[sub_columns].copy()  # df with only one value column
             sub_df = sub_df.dropna()  # to ensure we don't sample over missing values
-            if sub_df.shape[0] is 0:
+            if sub_df.shape[0] == 0:
                 continue
             # calculate minutes interval between non nan samples for each interval (day or hour) and only keep
             # days/hours where the interval is smaller than the max allowed gap
             if sampling.needs_max_gap_checking:
-                if sampling.sample_rule is '1D':
-                    result = self.__df.groupby(by=self.__df[GeneralisedCols.datetime].dt.date, group_keys=True).apply(
-                        lambda x: x[GeneralisedCols.datetime].diff().astype('timedelta64[m]'))
+                if sampling.sample_rule == '1D':
+                    if len(set(sub_df[GeneralisedCols.datetime].dt.date)) == 1:  # only one day of data
+                        result = sub_df[GeneralisedCols.datetime].diff().astype('timedelta64[m]')
+                    else:
+                        result = sub_df.groupby(by=sub_df[GeneralisedCols.datetime].dt.date,
+                                                   group_keys=True).apply(
+                            lambda x: x[GeneralisedCols.datetime].diff().astype('timedelta64[m]'))
                     sub_df['diff'] = result.reset_index(level=0, drop=True)
                     # days with bigger gaps than max
                     bigger_gaps_dates = set(
@@ -90,7 +94,7 @@ class ResampleDataFrame:
             agg_dict[column] = sampling.agg_cols
             resampled_df = sub_df.resample(sampling.sample_rule).agg(agg_dict)
 
-            if resampled_df.shape[0] is 0:
+            if resampled_df.shape[0] == 0:
                 continue
 
             if resulting_df is None:
@@ -136,8 +140,8 @@ class ResampleDataFrame:
         resulting_df[missing_columns] = None
 
         # replace na with 0 for count columns
-        resulting_df[self.__config.resampling_count_columns()] = resulting_df[
-            self.__config.resampling_count_columns()].fillna(0)
+        count_columns = self.__config.resampling_count_columns()
+        resulting_df[count_columns] = resulting_df[count_columns].fillna(0)
 
         # reorder columns
         return resulting_df.loc[:, columns]
