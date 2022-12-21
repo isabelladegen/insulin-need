@@ -135,7 +135,7 @@ class ResampleDataFrame:
         missing_columns = list(set(columns) - set(resulting_df.columns))
         resulting_df[missing_columns] = None
 
-        # change count columns to int
+        # replace na with 0 for count columns
         resulting_df[self.__config.resampling_count_columns()] = resulting_df[
             self.__config.resampling_count_columns()].fillna(0)
 
