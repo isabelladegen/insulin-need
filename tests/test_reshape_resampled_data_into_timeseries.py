@@ -131,7 +131,7 @@ hourly_df[GeneralisedCols.id] = hourly_df[GeneralisedCols.id].astype(str)
 
 hourly = Hourly()
 daily = Daily()
-mean_cols = [GeneralisedCols.mean_iob.value, GeneralisedCols.mean_cob.value, GeneralisedCols.mean_bg.value]
+mean_cols = Configuration.resampled_mean_columns()
 daily_ts = DailyTimeseries()
 weekly_ts = WeeklyTimeseries()
 
@@ -182,7 +182,8 @@ def test_translates_df_into_3d_nparray_of_daily_ts_if_three_cols_provided():
 
 
 def test_translates_df_into_2d_nparray_of_daily_ts_if_two_cols_provided():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, [GeneralisedCols.mean_iob, GeneralisedCols.mean_bg])
+    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts,
+                                                   [GeneralisedCols.mean_iob, GeneralisedCols.mean_bg])
 
     result = translate.to_x_train()
 
@@ -198,6 +199,19 @@ def test_calculates_resampled_3d_nparray_of_daily_time_series():
     result = translate.to_x_train()
 
     assert_that(result.shape, is_((376, 24, 3)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_calculates_resampled_3d_and_1d_nparray_of_daily_time_series():
+    df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
+
+    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, mean_cols)
+
+    x_3d = translate.to_x_train()
+    x_1d = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+
+    assert_that(x_3d.shape, is_((30, 24, 3)))
+    assert_that(x_1d.shape, is_((30, 24, 1)))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")

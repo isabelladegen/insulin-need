@@ -63,7 +63,7 @@ class TimeSeriesKMeansClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
+    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], timeseries_description: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_metric="dtw", metric_prams: {} = None):
         """Collection of convenience function for tslearn k-means.
@@ -83,8 +83,8 @@ class TimeSeriesKMeansClustering:
         x_ticks : [int]
             x_ticks to be used
 
-        sampling : Sampling
-            used to calibrate the x axis of the graphs
+        timeseries description : TimeSeriesDescription
+            used to calibrate the x-axis of the graphs
 
         scaler : TimeSeriesScalerMinMax or TimeSeriesScalerMeanVariance or None if no scaling
             Default is MinMax scaling
@@ -96,7 +96,7 @@ class TimeSeriesKMeansClustering:
 
         x_full_column_names : []
             columns for x full to be able to find the right TS in the np.array
-            :param sampling:
+            :param timeseries_description:
         """
         self.label_font_size = 20
         self.__n_clusters = n_clusters
@@ -111,8 +111,8 @@ class TimeSeriesKMeansClustering:
         self.__metric_params = metric_prams
         self.__max_iter = 10
         self.__random_state = 66
-        self.__x_ticks = sampling.x_ticks
-        self.__x_label = "X = " + sampling.description
+        self.__x_ticks = timeseries_description.x_ticks
+        self.__x_label = "X = " + timeseries_description.description
 
         if x_full is not None:
             assert (x_full_column_names is not None)

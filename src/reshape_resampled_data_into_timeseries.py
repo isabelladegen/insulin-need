@@ -72,8 +72,14 @@ class ReshapeResampledDataIntoTimeseries:
 
         """
 
-    def to_x_train(self):
+    def to_x_train(self, cols: [str] = []):
         """Returns resampled regular ts as multidimensional ndarray of the columns provided.
+
+        Parameters
+        ----------
+        cols : [str]
+            Optional parameter if further filtering is required for example to do single variate kmeans.
+            When empty all columns initially provided will be added to x_train
 
         Returns
         -------
@@ -81,10 +87,17 @@ class ReshapeResampledDataIntoTimeseries:
             X_train of shape=(n_ts, sz, d), where n_ts is number of time series,
             sz is length of each time series, and d=number of columns
         """
+        if cols:
+            columns = cols
+        else:
+            columns = self.columns
+        df = self.processed_df[columns]
+
         length_of_ts = self.ts_description.length
-        number_of_time_series = int(len(self.processed_df) / length_of_ts)
-        number_of_variates = len(self.columns)
-        return self.processed_df.to_numpy().reshape(
+        number_of_time_series = int(len(df) / length_of_ts)
+        number_of_variates = len(columns)
+
+        return df.to_numpy().reshape(
             number_of_time_series,
             length_of_ts,
             number_of_variates

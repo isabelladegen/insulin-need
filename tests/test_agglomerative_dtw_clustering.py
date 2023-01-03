@@ -9,7 +9,7 @@ import pytest
 
 from src.agglomerative_dtw_clustering import AgglomerativeTSClustering
 from src.configurations import Configuration
-from src.continuous_series import ContinuousSeries, Cols
+from src.continuous_series import Cols
 
 # build fake data
 from src.multivariate_resampled_series import MultivariateResampledSeries

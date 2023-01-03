@@ -224,6 +224,13 @@ class Configuration:
                 GeneralisedCols.count_bg.value
                 ]
 
+    @staticmethod
+    def resampled_mean_columns():
+        return [GeneralisedCols.mean_iob.value,
+                GeneralisedCols.mean_cob.value,
+                GeneralisedCols.mean_bg.value
+                ]
+
     def enacted_cols(self):
         return [k for k in self.device_status_col_type.keys() if 'enacted' in k]
 

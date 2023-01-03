@@ -13,7 +13,8 @@ class TimeSeriesKMeansClusteringCrossValidation:
     n_fold_km : list with n_fold TimeSeriesKMeans k-means models each run on one of n_fold-1 of the ts
     """
 
-    def __init__(self, n_fold: int, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
+    def __init__(self, n_fold: int, n_clusters: int, x_train: np.array, x_train_column_names: [str],
+                 timeseries_description: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_metric="dtw", metric_prams: {} = None):
         """Collection of convenience function for tslearn k-means.
@@ -49,7 +50,7 @@ class TimeSeriesKMeansClusteringCrossValidation:
 
         x_full_column_names : []
             columns for x full to be able to find the right TS in the np.array
-            :param sampling:
+            :param timeseries_description:
         """
         self.label_font_size = 20
         self.__n_fold = n_fold
@@ -60,8 +61,8 @@ class TimeSeriesKMeansClusteringCrossValidation:
         self.__metric_params = metric_prams
         self.__max_iter = 10
         self.__random_state = 66
-        self.__x_ticks = sampling.x_ticks
-        self.__x_label = "X = " + sampling.description
+        self.__x_ticks = timeseries_description.x_ticks
+        self.__x_label = "X = " + timeseries_description.description
 
         # create x_train for each fold
         self.__x_train_folds = np.split(self.__x_train, self.__n_fold)  # splits data into n_fold chunks
@@ -83,7 +84,7 @@ class TimeSeriesKMeansClusteringCrossValidation:
         self.n_fold_km = []
         for x in self.__x_trains:
             km = TimeSeriesKMeansClustering(n_clusters=2, x_train=x, x_train_column_names=['IOB', 'COB', 'BG'],
-                                            sampling=sampling)
+                                            timeseries_description=timeseries_description)
             self.n_fold_km.append(km)
 
     def silhouette_scores(self):

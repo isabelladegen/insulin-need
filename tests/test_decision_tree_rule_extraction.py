@@ -23,7 +23,7 @@ def test_calculates_decision_trees_and_plots_describing_graphs():
 
     x_train = mv.get_1d_numpy_array(sampling.cob_col)
     x_full = mv.get_multivariate_3d_numpy_array()
-    km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"], sampling=sampling,
+    km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"], timeseries_description=sampling,
                                     x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
     y = km.y_pred
     x_dt_train = mv.get_vectorised_df(sampling.cob_col)
