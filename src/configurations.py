@@ -68,7 +68,7 @@ class Resampling:
     sample_rule = None
     # the frequency of the regular time series after resampling: 1H a reading every hour, 1D a reading every day
     needs_max_gap_checking = False
-    # if max gap in min is smaller than the dample rule time period (e.g  180min and 1D) than max_gap_checking is needed
+    # if max gap in min is smaller than the sample rule time period (e.g  180min and 1D) than max_gap_checking is needed
 
     description = 'Base'
     agg_cols = [ResamplingAggCols.min.value, ResamplingAggCols.max.value, ResamplingAggCols.mean.value,

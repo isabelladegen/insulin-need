@@ -1,7 +1,7 @@
 import numpy as np
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from src.stats import DailyTimeseries, Sampling
+from src.stats import TimeSeriesDescription
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 
 
@@ -13,7 +13,7 @@ class TimeSeriesKMeansClusteringCrossValidation:
     n_fold_km : list with n_fold TimeSeriesKMeans k-means models each run on one of n_fold-1 of the ts
     """
 
-    def __init__(self, n_fold: int, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
+    def __init__(self, n_fold: int, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_metric="dtw", metric_prams: {} = None):
         """Collection of convenience function for tslearn k-means.

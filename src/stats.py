@@ -4,23 +4,29 @@ from src.continuous_series import Resolution
 
 
 @dataclass
-class Sampling:
-    time_col = 'openaps/enacted/timestamp'
-    iob_col = 'openaps/enacted/IOB'
-    cob_col = 'openaps/enacted/COB'
-    bg_col = 'openaps/enacted/bg'
-    max_interval = None  # how frequent readings need per day, 60=every hour, 180=every three hours
-    min_days_of_data = None  # how many days of consecutive readings with at least a reading every max interval
-    sample_rule = None  # the frequency of the regular time series after resampling
-    resolution = None
-    length = 0
+class TimeSeriesDescription:
+    """ Describes granularity of ts
+
+    """
+    time_col = 'openaps/enacted/timestamp'  # TODO delete
+    iob_col = 'openaps/enacted/IOB'  # TODO delete
+    cob_col = 'openaps/enacted/COB'  # TODO delete
+    bg_col = 'openaps/enacted/bg'  # TODO delete
+    max_interval = None  # how frequent readings need per day, 60=every hour, 180=every three hours # TODO delete
+    min_days_of_data = None  # how many days of consecutive readings with at least a reading every max interval # TODO delete
+    sample_rule = None  # the frequency of the regular time series after resampling # TODO delete
+    resolution = None  # TODO delete
+    length = 0  # max length if variable length allowed
     description = ''
     x_ticks = []
 
 
 @dataclass
-# Keep all days when there are 24 datapoints with at least a reading every 60min
-class DailyTimeseries(Sampling):  # Daily TS
+class DailyTimeseries(TimeSeriesDescription):  # Daily TS
+    """ Class to describe daily time series
+    - Df consists of hourly readings per day, max 24 readings
+    - each day is a new time series
+    """
     # k means day, heatmap for days
     max_interval = 60  # how frequent readings need per day, 60=every hour
     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
@@ -33,7 +39,7 @@ class DailyTimeseries(Sampling):  # Daily TS
 
 @dataclass
 # Keep all weeks when there are 7 days of data with each day having at least a reading every 180min
-class WeeklyTimeseries(Sampling):  # Weekly TS
+class WeeklyTimeseries(TimeSeriesDescription):  # Weekly TS
     # K means week
     max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week
@@ -45,7 +51,7 @@ class WeeklyTimeseries(Sampling):  # Weekly TS
 
 
 @dataclass
-class Months(Sampling):
+class Months(TimeSeriesDescription):
     # months heat map
     max_interval = 180  # how frequent readings need per day, 60=every hour, 180=every three hours
     min_days_of_data = 1  # how many days of consecutive readings with at least a reading every max interval, 7 = a week

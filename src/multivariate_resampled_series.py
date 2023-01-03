@@ -6,7 +6,7 @@ from src.configurations import Configuration
 from src.continuous_series import ContinuousSeries, Resolution, Cols
 from src.helper import device_status_file_path_for
 from src.read import read_flat_device_status_df_from_file
-from src.stats import Sampling
+from src.stats import TimeSeriesDescription
 
 
 @dataclass
@@ -29,7 +29,7 @@ class MultivariateResampledSeries:
     __cob_nparray = None
     __bg_nparray = None
 
-    def __init__(self, zip_id: str, resample_value: Cols, sampling: Sampling, keep_raw_df=False):
+    def __init__(self, zip_id: str, resample_value: Cols, sampling: TimeSeriesDescription, keep_raw_df=False):
         self.zip_id = zip_id
         self.resample_value = resample_value
         self.sampling = sampling

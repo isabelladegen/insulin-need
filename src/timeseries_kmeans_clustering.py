@@ -7,12 +7,12 @@ from sklearn.metrics import silhouette_samples
 from tslearn.barycenters import dtw_barycenter_averaging
 from tslearn.clustering import TimeSeriesKMeans, silhouette_score
 from tslearn.metrics import cdist_soft_dtw_normalized, cdist_dtw
-from tslearn.preprocessing import TimeSeriesScalerMeanVariance, TimeSeriesScalerMinMax
+from tslearn.preprocessing import TimeSeriesScalerMinMax
 
 from tslearn.utils import to_time_series_dataset, to_time_series
 
 # Time series implementation of ts_silhouette_samples
-from src.stats import DailyTimeseries, Sampling
+from src.stats import TimeSeriesDescription
 
 
 def ts_silhouette_samples(X, labels, metric=None, metric_params=None, n_jobs=None, verbose=0, **kwds):
@@ -63,7 +63,7 @@ class TimeSeriesKMeansClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
+    def __init__(self, n_clusters: int, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_metric="dtw", metric_prams: {} = None):
         """Collection of convenience function for tslearn k-means.

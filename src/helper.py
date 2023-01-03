@@ -8,7 +8,6 @@ from pathlib import Path
 import pandas as pd
 
 from src.configurations import Configuration, Resampling
-from src.stats import Sampling
 
 
 def dataframe_of_read_record_stats(read_records: []):

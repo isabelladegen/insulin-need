@@ -7,7 +7,7 @@ from tslearn.clustering import silhouette_score
 from tslearn.metrics import dtw
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from src.stats import Sampling
+from src.stats import TimeSeriesDescription
 from src.timeseries_kmeans_clustering import ts_silhouette_samples
 
 
@@ -23,7 +23,7 @@ class AgglomerativeTSClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, x_train: np.array, x_train_column_names: [str], sampling: Sampling,
+    def __init__(self, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_threshold=0.5,
                  linkage="single",
