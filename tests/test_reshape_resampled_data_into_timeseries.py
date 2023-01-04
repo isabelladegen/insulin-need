@@ -7,8 +7,7 @@ from hamcrest import *
 from pandas import DatetimeTZDtype
 
 from src.configurations import Configuration, Daily, Hourly, GeneralisedCols
-from src.multivariate_resampled_series import TimeColumns
-from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries
+from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries, TimeColumns
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
 from src.stats import DailyTimeseries, WeeklyTimeseries

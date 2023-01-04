@@ -1,9 +1,20 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 
 from src.configurations import GeneralisedCols
-from src.multivariate_resampled_series import TimeColumns
 from src.stats import TimeSeriesDescription, DailyTimeseries, WeeklyTimeseries
+
+
+@dataclass
+class TimeColumns:  # Daily TS
+    day_of_year = "day of year"
+    week_of_year = "week"
+    month = 'month'
+    year = 'year'
+    week_day = 'weekday'
+    hour = 'hours'
 
 
 class ReshapeResampledDataIntoTimeseries:
