@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from src.configurations import GeneralisedCols
+from src.multivariate_resampled_series import TimeColumns
 from src.stats import TimeSeriesDescription, DailyTimeseries, WeeklyTimeseries
 
 
@@ -103,13 +104,13 @@ class ReshapeResampledDataIntoTimeseries:
             number_of_variates
         )
 
-    def get_vectorised_df(self, series_name):
-        """Returns df vectorised into rows being n_ts and columns being features n_ts, and special time columns
+    def to_vectorised_df(self, series_name):
+        """Returns df vectorised dataframe of shape X_train of shape=(n_ts, n_features) for variate series_name
 
         Parameters
         ----------
         series_name : str
-            which of the multivariate series to return, IOB, COB or BG (use sampling class for proper name)
+            which of the multivariate series to return
 
         Returns
         -------
@@ -117,6 +118,33 @@ class ReshapeResampledDataIntoTimeseries:
             X_train of shape=(n_ts, n_features), where n_ts is number of days or weeks (depending on sampling resolution),
             and n_features is each sample in each ts as a feature, plus the special time columns
         """
+        # get numpy 1D array that's already shaped with hours resp weekdays as columns and drop 3rd dimension
+        array = self.to_x_train([series_name])
+        shape = array.shape
+        twoDArray = array.reshape(shape[0], shape[1])
+        df = pd.DataFrame(twoDArray)
+
+        series_short_name = series_name.split('/')[-1]
+        if isinstance(self.ts_description, DailyTimeseries):
+            df.columns = [series_short_name + " at " + str(x) for x in df.columns]  # create strings
+            time_columns = [TimeColumns.day_of_year, TimeColumns.week_day, TimeColumns.week_of_year, TimeColumns.month,
+                            TimeColumns.year]
+            cols_for_uniques = [TimeColumns.day_of_year, TimeColumns.year]
+        elif isinstance(self.ts_description, WeeklyTimeseries):
+            df.columns = [series_short_name + " " + x for x in
+                          ["Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"]]  # create strings
+            time_columns = [TimeColumns.week_of_year, TimeColumns.month, TimeColumns.year]
+            cols_for_uniques = [TimeColumns.week_of_year, TimeColumns.year]
+        else:
+            raise NotImplementedError(
+                "Don't know how to vectorised provide time series description of type " + str(
+                    type(self.ts_description)))
+
+        orig_df = self.to_df_with_time_features()[time_columns]
+        reduced_df = orig_df.drop_duplicates(subset=cols_for_uniques, keep='first')
+        for column in list(reduced_df.columns):
+            df[column] = list(reduced_df[column])
+        return df
 
     def __preprocess(self, raw_df):
         """ Filters the raw df ready to be translated into ndarrays
@@ -152,4 +180,21 @@ class ReshapeResampledDataIntoTimeseries:
             raise NotImplementedError(
                 "Don't know how to process provide time series description of type " + str(type(self.ts_description)))
 
+        return df
+
+    def to_df_with_time_features(self):
+        """Returns processed df with following time features as additional columns: month, day of week, time of day,
+        year
+
+        Returns
+        -------
+        pandas Dataframe
+        """
+        df = self.processed_df.copy()
+        df[TimeColumns.hour] = df.index.hour
+        df[TimeColumns.month] = df.index.month
+        df[TimeColumns.week_day] = df.index.weekday
+        df[TimeColumns.year] = df.index.year
+        df[TimeColumns.week_of_year] = df.index.isocalendar().week
+        df[TimeColumns.day_of_year] = df.index.day_of_year
         return df

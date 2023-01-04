@@ -1,19 +1,17 @@
 import os
 from datetime import datetime, timezone
 
-import numpy as np
 import pandas as pd
 import pytest
 from hamcrest import *
 from pandas import DatetimeTZDtype
 
 from src.configurations import Configuration, Daily, Hourly, GeneralisedCols
-from src.continuous_series import Cols
-from src.multivariate_resampled_series import MultivariateResampledSeries
+from src.multivariate_resampled_series import TimeColumns
 from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
-from src.stats import DailyTimeseries, WeeklyTimeseries, TimeSeriesDescription
+from src.stats import DailyTimeseries, WeeklyTimeseries
 
 # test data:
 # day1 sample every hour
@@ -72,30 +70,30 @@ d222 = datetime(year=2019, month=1, day=11, hour=22, minute=0, tzinfo=timezone.u
 d223 = datetime(year=2019, month=1, day=11, hour=23, minute=0, tzinfo=timezone.utc)
 
 # times for day 3 - has all
-d30 = datetime(year=2019, month=1, day=12, hour=0, minute=0, tzinfo=timezone.utc)
-d31 = datetime(year=2019, month=1, day=12, hour=1, minute=0, tzinfo=timezone.utc)
-d32 = datetime(year=2019, month=1, day=12, hour=2, minute=0, tzinfo=timezone.utc)
-d33 = datetime(year=2019, month=1, day=12, hour=3, minute=0, tzinfo=timezone.utc)
-d34 = datetime(year=2019, month=1, day=12, hour=4, minute=0, tzinfo=timezone.utc)
-d35 = datetime(year=2019, month=1, day=12, hour=5, minute=0, tzinfo=timezone.utc)
-d36 = datetime(year=2019, month=1, day=12, hour=6, minute=0, tzinfo=timezone.utc)
-d37 = datetime(year=2019, month=1, day=12, hour=7, minute=0, tzinfo=timezone.utc)
-d38 = datetime(year=2019, month=1, day=12, hour=8, minute=0, tzinfo=timezone.utc)
-d39 = datetime(year=2019, month=1, day=12, hour=9, minute=0, tzinfo=timezone.utc)
-d310 = datetime(year=2019, month=1, day=12, hour=10, minute=0, tzinfo=timezone.utc)
-d311 = datetime(year=2019, month=1, day=12, hour=11, minute=0, tzinfo=timezone.utc)
-d312 = datetime(year=2019, month=1, day=12, hour=12, minute=0, tzinfo=timezone.utc)
-d313 = datetime(year=2019, month=1, day=12, hour=13, minute=0, tzinfo=timezone.utc)
-d314 = datetime(year=2019, month=1, day=12, hour=14, minute=0, tzinfo=timezone.utc)
-d315 = datetime(year=2019, month=1, day=12, hour=15, minute=0, tzinfo=timezone.utc)
-d316 = datetime(year=2019, month=1, day=12, hour=16, minute=0, tzinfo=timezone.utc)
-d317 = datetime(year=2019, month=1, day=12, hour=17, minute=0, tzinfo=timezone.utc)
-d318 = datetime(year=2019, month=1, day=12, hour=18, minute=0, tzinfo=timezone.utc)
-d319 = datetime(year=2019, month=1, day=12, hour=19, minute=0, tzinfo=timezone.utc)
-d320 = datetime(year=2019, month=1, day=12, hour=20, minute=0, tzinfo=timezone.utc)
-d321 = datetime(year=2019, month=1, day=12, hour=21, minute=0, tzinfo=timezone.utc)
-d322 = datetime(year=2019, month=1, day=12, hour=22, minute=0, tzinfo=timezone.utc)
-d323 = datetime(year=2019, month=1, day=12, hour=23, minute=0, tzinfo=timezone.utc)
+d30 = datetime(year=2021, month=2, day=12, hour=0, minute=0, tzinfo=timezone.utc)
+d31 = datetime(year=2021, month=2, day=12, hour=1, minute=0, tzinfo=timezone.utc)
+d32 = datetime(year=2021, month=2, day=12, hour=2, minute=0, tzinfo=timezone.utc)
+d33 = datetime(year=2021, month=2, day=12, hour=3, minute=0, tzinfo=timezone.utc)
+d34 = datetime(year=2021, month=2, day=12, hour=4, minute=0, tzinfo=timezone.utc)
+d35 = datetime(year=2021, month=2, day=12, hour=5, minute=0, tzinfo=timezone.utc)
+d36 = datetime(year=2021, month=2, day=12, hour=6, minute=0, tzinfo=timezone.utc)
+d37 = datetime(year=2021, month=2, day=12, hour=7, minute=0, tzinfo=timezone.utc)
+d38 = datetime(year=2021, month=2, day=12, hour=8, minute=0, tzinfo=timezone.utc)
+d39 = datetime(year=2021, month=2, day=12, hour=9, minute=0, tzinfo=timezone.utc)
+d310 = datetime(year=2021, month=2, day=12, hour=10, minute=0, tzinfo=timezone.utc)
+d311 = datetime(year=2021, month=2, day=12, hour=11, minute=0, tzinfo=timezone.utc)
+d312 = datetime(year=2021, month=2, day=12, hour=12, minute=0, tzinfo=timezone.utc)
+d313 = datetime(year=2021, month=2, day=12, hour=13, minute=0, tzinfo=timezone.utc)
+d314 = datetime(year=2021, month=2, day=12, hour=14, minute=0, tzinfo=timezone.utc)
+d315 = datetime(year=2021, month=2, day=12, hour=15, minute=0, tzinfo=timezone.utc)
+d316 = datetime(year=2021, month=2, day=12, hour=16, minute=0, tzinfo=timezone.utc)
+d317 = datetime(year=2021, month=2, day=12, hour=17, minute=0, tzinfo=timezone.utc)
+d318 = datetime(year=2021, month=2, day=12, hour=18, minute=0, tzinfo=timezone.utc)
+d319 = datetime(year=2021, month=2, day=12, hour=19, minute=0, tzinfo=timezone.utc)
+d320 = datetime(year=2021, month=2, day=12, hour=20, minute=0, tzinfo=timezone.utc)
+d321 = datetime(year=2021, month=2, day=12, hour=21, minute=0, tzinfo=timezone.utc)
+d322 = datetime(year=2021, month=2, day=12, hour=22, minute=0, tzinfo=timezone.utc)
+d323 = datetime(year=2021, month=2, day=12, hour=23, minute=0, tzinfo=timezone.utc)
 
 zip_id1 = '555'
 iob = 2.4
@@ -173,6 +171,16 @@ def test_drops_nan_rows_for_cols():
     assert_that(dates_in_df, contains_exactly(d10.date()))
 
 
+def test_returns_df_with_additional_time_feature_columns():
+    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+
+    df = translate.to_df_with_time_features()
+
+    actual_columns = list(df.columns)
+    assert_that(actual_columns, has_items(TimeColumns.hour, TimeColumns.week_day, TimeColumns.month, TimeColumns.year,
+                                          TimeColumns.week_of_year, TimeColumns.day_of_year))
+
+
 def test_translates_df_into_3d_nparray_of_daily_ts_if_three_cols_provided():
     translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
@@ -188,6 +196,26 @@ def test_translates_df_into_2d_nparray_of_daily_ts_if_two_cols_provided():
     result = translate.to_x_train()
 
     assert_that(result.shape, is_((2, 24, 2)))
+
+
+def test_translates_df_into_dataframe_with_time_features():
+    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+
+    result = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+
+    number_of_days = 2
+    number_of_features = 24 + 5
+    assert_that(result.shape, is_((number_of_days, number_of_features)))
+    assert_that(result[TimeColumns.week_day][0], is_(d10.weekday()))
+    assert_that(result[TimeColumns.week_day][1], is_(d30.weekday()))
+    assert_that(result[TimeColumns.week_of_year][0], is_(d10.isocalendar().week))
+    assert_that(result[TimeColumns.week_of_year][1], is_(d30.isocalendar().week))
+    assert_that(result[TimeColumns.month][0], is_(d10.month))
+    assert_that(result[TimeColumns.month][1], is_(d30.month))
+    assert_that(result[TimeColumns.day_of_year][0], is_(d10.timetuple().tm_yday))
+    assert_that(result[TimeColumns.day_of_year][1], is_(d30.timetuple().tm_yday))
+    assert_that(result[TimeColumns.year][0], is_(d10.year))
+    assert_that(result[TimeColumns.year][1], is_(d30.year))
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
@@ -223,3 +251,27 @@ def test_calculates_resampled_3d_nparray_of_weekly_time_series():
     result = translate.to_x_train()
 
     assert_that(result.shape, is_((50, 7, 3)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_vectorised_df_daily_sampling():
+    raw_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
+    translate = ReshapeResampledDataIntoTimeseries(raw_df, daily_ts, mean_cols)
+
+    df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+
+    number_of_days = 376
+    number_of_features = 24 + 5
+    assert_that(df.shape, is_((number_of_days, number_of_features)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_vectorised_df_weekly_sampling():
+    raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
+    translate = ReshapeResampledDataIntoTimeseries(raw_df, weekly_ts, mean_cols)
+
+    df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+
+    number_of_days = 50
+    number_of_features = 7 + 3
+    assert_that(df.shape, is_((number_of_days, number_of_features)))
