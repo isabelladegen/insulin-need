@@ -23,7 +23,7 @@ class AgglomerativeTSClustering:
         cluster number for each ts in x_train
     """
 
-    def __init__(self, x_train: np.array, x_train_column_names: [str], sampling: TimeSeriesDescription,
+    def __init__(self, x_train: np.array, x_train_column_names: [str], timeseries_description: TimeSeriesDescription,
                  scaler=TimeSeriesScalerMinMax(), x_full: np.array = None, x_full_column_names: [str] = None,
                  distance_threshold=0.5,
                  linkage="single",
@@ -41,8 +41,8 @@ class AgglomerativeTSClustering:
         x_train_column_names: []
             list of ts names in x_train
 
-        sampling : Sampling
-            used to calibrate the x axis of the graphs
+        timeseries_description : TimeSeriesDescription
+            how to reshape the resampled data into a timeseries, used to calibrate the x axis of the graphs
 
         scaler : TimeSeriesScalerMinMax or TimeSeriesScalerMeanVariance or None if no scaling
             Default is MinMax scaling
@@ -54,7 +54,7 @@ class AgglomerativeTSClustering:
 
         x_full_column_names : []
             columns for x full to be able to find the right TS in the np.array
-            :param sampling:
+            :param timeseries_description:
         """
         self.distance_constraint = distance_constraint
         self.sakoe_chiba_radius = sakoe_chiba_radius
@@ -65,8 +65,8 @@ class AgglomerativeTSClustering:
             # this is really important especially for multivariate TS
             self.__x_train = self.__scaler.fit_transform(x_train)  # normalise data
         self.__x_train_column_names = x_train_column_names
-        self.__x_ticks = sampling.x_ticks
-        self.__x_label = "X = " + sampling.description
+        self.__x_ticks = timeseries_description.x_ticks
+        self.__x_label = "X = " + timeseries_description.description
 
         if x_full is not None:
             assert (x_full_column_names is not None)
@@ -281,6 +281,7 @@ class AgglomerativeTSClustering:
             leaf_font_size=12,
             no_labels=no_labels
         )
+        plt.show()
 
     def get_y_pred_as_binary(self):
         """Returns y pred with only two classes: normal and anomaly. The normal class is the most frequent class
