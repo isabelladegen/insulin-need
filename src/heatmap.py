@@ -99,9 +99,10 @@ class Heatmap:
         # filter df by zip_ids that need to be plotted
         if zip_ids:
             filtered_df = self.__df.loc[self.__df[GeneralisedCols.id].isin(zip_ids)]
+            columns = zip_ids
         else:
             filtered_df = self.__df
-        columns = list(filtered_df[GeneralisedCols.id].unique())
+            columns = list(filtered_df[GeneralisedCols.id].unique())
 
         # calculate time columns for the resolution required
         timed_df = filtered_df.copy()
@@ -119,7 +120,7 @@ class Heatmap:
                                  figsize=(10, 7))
 
         if show_title:
-            title = 'Heatmaps of ' + self.__sampling.description + ' time series (x=' + x_axis.label + ', y=' + y_axis.label + ')'
+            title = 'Heatmaps of ' + self.__sampling.description + ' data (x=' + x_axis.label + ', y=' + y_axis.label + ')'
             fig.suptitle(title)
 
         data_plotted = {}
@@ -137,6 +138,7 @@ class Heatmap:
                                  yticklabels=y_axis.labels_for_graph,
                                  square=False,
                                  ax=axes[row_idx][column_idx],
+                                 vmin=Heatmap.__vmin_for_variate(ts_variate),
                                  cmap="mako"
                                  )
                 if show_title:
@@ -192,3 +194,14 @@ class Heatmap:
         pivot = pivot.reindex(sorted(pivot.columns), axis=1)
         # sort rows
         return pivot
+
+    @classmethod
+    def __vmin_for_variate(cls, ts_variate: str):
+        variate = ts_variate.lower()
+        if 'iob' in variate:
+            return 0.0
+        if 'cob' in variate:
+            return 0.0
+        if 'bg' in variate:
+            return 50.0
+        return 0.0
