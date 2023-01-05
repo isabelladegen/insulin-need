@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pandas as pd
 import pytest
@@ -7,10 +7,8 @@ from hamcrest import *
 from pandas import DatetimeTZDtype
 
 from src.configurations import Configuration, Daily, Hourly, GeneralisedCols
-from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries, TimeColumns
+from src.translate_into_timeseries import TranslateIntoTimeseries, TimeColumns, DailyTimeseries, WeeklyTimeseries
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
-
-from src.stats import DailyTimeseries, WeeklyTimeseries
 
 # test data:
 # day1 sample every hour
@@ -105,6 +103,8 @@ bg = 5.8
 bg2 = 12.3
 bg3 = 4.2
 no_samples = 24 + 23 + 24
+day1_times = [d10, d11, d12, d13, d14, d15, d16, d17, d18, d19, d110, d111, d112, d113, d114, d115,
+              d116, d117, d118, d119, d120, d121, d122, d123]
 hourly_data = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d16, d17,
                                                 d18, d19, d110, d111, d112, d113, d114, d115,
                                                 d116, d117, d118, d119, d120, d121, d122, d123,
@@ -134,7 +134,7 @@ weekly_ts = WeeklyTimeseries()
 
 
 def test_only_keeps_columns_provided():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     df = translate.processed_df
 
@@ -142,7 +142,7 @@ def test_only_keeps_columns_provided():
 
 
 def test_drops_days_with_insufficient_samples_for_daily_time_series():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     df = translate.processed_df
 
@@ -152,7 +152,7 @@ def test_drops_days_with_insufficient_samples_for_daily_time_series():
 
 
 def test_sets_datetime_col_as_dateindex_on_df():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     assert_that(translate.processed_df.index.dtype, is_(DatetimeTZDtype('ns', 'UTC')))
 
@@ -161,7 +161,7 @@ def test_drops_nan_rows_for_cols():
     # drop one bg value on day 3 to remove that day from the final df
     df_with_nan = hourly_df.copy()
     df_with_nan.at[df_with_nan.index[-1], GeneralisedCols.mean_bg] = None
-    translate = ReshapeResampledDataIntoTimeseries(df_with_nan, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(df_with_nan, daily_ts, mean_cols)
 
     df = translate.processed_df
 
@@ -171,7 +171,7 @@ def test_drops_nan_rows_for_cols():
 
 
 def test_returns_df_with_additional_time_feature_columns():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     df = translate.to_df_with_time_features()
 
@@ -181,7 +181,7 @@ def test_returns_df_with_additional_time_feature_columns():
 
 
 def test_translates_df_into_3d_nparray_of_daily_ts_if_three_cols_provided():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     result = translate.to_x_train()
 
@@ -189,8 +189,8 @@ def test_translates_df_into_3d_nparray_of_daily_ts_if_three_cols_provided():
 
 
 def test_translates_df_into_2d_nparray_of_daily_ts_if_two_cols_provided():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts,
-                                                   [GeneralisedCols.mean_iob, GeneralisedCols.mean_bg])
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts,
+                                        [GeneralisedCols.mean_iob, GeneralisedCols.mean_bg])
 
     result = translate.to_x_train()
 
@@ -198,7 +198,7 @@ def test_translates_df_into_2d_nparray_of_daily_ts_if_two_cols_provided():
 
 
 def test_translates_df_into_dataframe_with_time_features():
-    translate = ReshapeResampledDataIntoTimeseries(hourly_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
     result = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
 
@@ -217,12 +217,53 @@ def test_translates_df_into_dataframe_with_time_features():
     assert_that(result[TimeColumns.year][1], is_(d30.year))
 
 
+def test_splits_preprocessed_df_into_dfs_of_continuous_days_of_daily_time_series():
+    # build more test data
+    day2_times = [d + timedelta(days=1) for d in day1_times]
+    day3_times = [d + timedelta(days=1) for d in day2_times]
+    day4_times = [d + timedelta(days=1) for d in day3_times]  # 4 continuous days
+    day6_times = [d + timedelta(days=2) for d in day4_times]  # add a gap and just one day
+    day8_times = [d + timedelta(days=2) for d in day6_times]  # two days
+    day9_times = [d + timedelta(days=1) for d in day8_times]
+    data = {
+        GeneralisedCols.datetime.value: day1_times + day2_times + day3_times + day4_times + day6_times + day8_times + day9_times,
+        GeneralisedCols.mean_iob.value: [iob] * 24 + [iob2] * 24 + [iob] * 24 + [iob2] * 24 + [iob3] * 24 + [
+            iob] * 24 + [iob3] * 24,
+        GeneralisedCols.mean_cob.value: [cob] * 24 + [cob2] * 24 + [cob] * 24 + [cob2] * 24 + [cob3] * 24 + [
+            cob] * 24 + [cob3] * 24,
+        GeneralisedCols.mean_bg.value: [bg] * 24 + [bg2] * 24 + [bg] * 24 + [bg2] * 24 + [bg3] * 24 + [
+            bg] * 24 + [bg3] * 24,
+        GeneralisedCols.system.value: ['bla'] * 7 * 24,
+        GeneralisedCols.id.value: [zip_id1] * 7 * 24
+    }
+    data_df = pd.DataFrame(data)
+    data_df[GeneralisedCols.datetime] = pd.to_datetime(data_df[GeneralisedCols.datetime], utc=True, errors="raise")
+    data_df[GeneralisedCols.id] = data_df[GeneralisedCols.id].astype(str)
+
+    translate = TranslateIntoTimeseries(data_df, daily_ts, mean_cols)
+    results = translate.to_continuous_time_series_dfs()
+
+    assert_that(len(results), is_(3))
+    first_series = results[0]
+    assert_that(first_series.shape[0], is_(4 * 24))  # four days with each 24 samples
+    assert_that(list(set(first_series.index.date)),
+                has_items(day1_times[0].date(), day2_times[0].date(), day3_times[0].date(), day4_times[0].date()))
+
+    second_series = results[1]
+    assert_that(second_series.shape[0], is_(1 * 24))  # one day with each 24 samples
+    assert_that(list(set(second_series.index.date)), has_items(day6_times[0].date()))
+
+    third_series = results[2]
+    assert_that(third_series.shape[0], is_(2 * 24))  # two days with each 24 samples
+    assert_that(list(set(third_series.index.date)), has_items(day8_times[0].date(), day9_times[0].date()))
+
+
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_calculates_resampled_3d_nparray_of_daily_time_series():
     # read already sampled data
     df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
 
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(df, daily_ts, mean_cols)
     result = translate.to_x_train()
 
     assert_that(result.shape, is_((376, 24, 3)))
@@ -232,7 +273,7 @@ def test_calculates_resampled_3d_nparray_of_daily_time_series():
 def test_calculates_resampled_3d_and_1d_nparray_of_daily_time_series():
     df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
 
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(df, daily_ts, mean_cols)
 
     x_3d = translate.to_x_train()
     x_1d = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
@@ -246,7 +287,7 @@ def test_calculates_resampled_3d_nparray_of_weekly_time_series():
     # read already sampled data
     df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
 
-    translate = ReshapeResampledDataIntoTimeseries(df, weekly_ts, mean_cols)
+    translate = TranslateIntoTimeseries(df, weekly_ts, mean_cols)
     result = translate.to_x_train()
 
     assert_that(result.shape, is_((50, 7, 3)))
@@ -255,7 +296,7 @@ def test_calculates_resampled_3d_nparray_of_weekly_time_series():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_returns_vectorised_df_daily_sampling():
     raw_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
-    translate = ReshapeResampledDataIntoTimeseries(raw_df, daily_ts, mean_cols)
+    translate = TranslateIntoTimeseries(raw_df, daily_ts, mean_cols)
 
     df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
 
@@ -267,10 +308,30 @@ def test_returns_vectorised_df_daily_sampling():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_returns_vectorised_df_weekly_sampling():
     raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
-    translate = ReshapeResampledDataIntoTimeseries(raw_df, weekly_ts, mean_cols)
+    translate = TranslateIntoTimeseries(raw_df, weekly_ts, mean_cols)
 
     df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
 
     number_of_days = 50
     number_of_features = 7 + 3
     assert_that(df.shape, is_((number_of_days, number_of_features)))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_list_of_continuous_weekly_time_series_for_daily_sampling():
+    raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
+    translate = TranslateIntoTimeseries(raw_df, WeeklyTimeseries(), mean_cols)
+
+    results = translate.to_continuous_time_series_dfs()
+
+    assert_that(len(results), is_(11))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_returns_list_of_continuous_daily_time_series_for_hourly_sampling():
+    raw_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
+    translate = TranslateIntoTimeseries(raw_df, daily_ts, mean_cols)
+
+    results = translate.to_continuous_time_series_dfs()
+
+    assert_that(len(results), is_(83))

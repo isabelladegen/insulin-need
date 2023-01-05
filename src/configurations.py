@@ -25,7 +25,7 @@ class OpenAPSConfigs(str, Enum):
     system_name = 'OpenAPS'
 
 
-class ResamplingAggCols(str, Enum):
+class Aggregators(str, Enum):
     # colum name and name of aggregation function
     min = 'min'
     max = 'max'
@@ -40,21 +40,21 @@ class GeneralisedCols(str, Enum):
     cob = 'cob'
     bg = 'bg'
     id = 'id'
-    mean_iob = iob + ' ' + ResamplingAggCols.mean.value
-    mean_cob = cob + ' ' + ResamplingAggCols.mean.value
-    mean_bg = bg + ' ' + ResamplingAggCols.mean.value
-    min_iob = iob + ' ' + ResamplingAggCols.min.value
-    min_cob = cob + ' ' + ResamplingAggCols.min.value
-    min_bg = bg + ' ' + ResamplingAggCols.min.value
-    max_iob = iob + ' ' + ResamplingAggCols.max.value
-    max_cob = cob + ' ' + ResamplingAggCols.max.value
-    max_bg = bg + ' ' + ResamplingAggCols.max.value
-    std_iob = iob + ' ' + ResamplingAggCols.std.value
-    std_cob = cob + ' ' + ResamplingAggCols.std.value
-    std_bg = bg + ' ' + ResamplingAggCols.std.value
-    count_iob = iob + ' ' + ResamplingAggCols.count.value
-    count_cob = cob + ' ' + ResamplingAggCols.count.value
-    count_bg = bg + ' ' + ResamplingAggCols.count.value
+    mean_iob = iob + ' ' + Aggregators.mean.value
+    mean_cob = cob + ' ' + Aggregators.mean.value
+    mean_bg = bg + ' ' + Aggregators.mean.value
+    min_iob = iob + ' ' + Aggregators.min.value
+    min_cob = cob + ' ' + Aggregators.min.value
+    min_bg = bg + ' ' + Aggregators.min.value
+    max_iob = iob + ' ' + Aggregators.max.value
+    max_cob = cob + ' ' + Aggregators.max.value
+    max_bg = bg + ' ' + Aggregators.max.value
+    std_iob = iob + ' ' + Aggregators.std.value
+    std_cob = cob + ' ' + Aggregators.std.value
+    std_bg = bg + ' ' + Aggregators.std.value
+    count_iob = iob + ' ' + Aggregators.count.value
+    count_cob = cob + ' ' + Aggregators.count.value
+    count_bg = bg + ' ' + Aggregators.count.value
     datetime = 'datetime'
     system = 'system'
 
@@ -71,8 +71,8 @@ class Resampling:
     # if max gap in min is smaller than the sample rule time period (e.g  180min and 1D) than max_gap_checking is needed
 
     description = 'Base'
-    agg_cols = [ResamplingAggCols.min.value, ResamplingAggCols.max.value, ResamplingAggCols.mean.value,
-                ResamplingAggCols.std.value, ResamplingAggCols.count.value]
+    agg_cols = [Aggregators.min.value, Aggregators.max.value, Aggregators.mean.value,
+                Aggregators.std.value, Aggregators.count.value]
 
     general_agg_cols_dictionary = {GeneralisedCols.id.value: 'first',
                                    GeneralisedCols.system.value: 'first',

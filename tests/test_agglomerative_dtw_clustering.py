@@ -4,21 +4,19 @@ from hamcrest import *
 import pytest
 
 from src.agglomerative_dtw_clustering import AgglomerativeTSClustering
-from src.configurations import Configuration, Hourly, GeneralisedCols
-from src.continuous_series import Cols
+from src.configurations import Configuration, Hourly, GeneralisedCols, Aggregators
 
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
-from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries
-from src.stats import DailyTimeseries
+from src.translate_into_timeseries import TranslateIntoTimeseries, DailyTimeseries
 
-y_sub_label = Cols.Mean
+y_sub_label = Aggregators.mean.value
 daily_ts = DailyTimeseries()
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_silhouette_analysis_for_clustering():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], timeseries_description=daily_ts)
@@ -29,7 +27,7 @@ def test_plots_silhouette_analysis_for_clustering():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_clustered_ts_and_others_in_grid():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()
@@ -49,7 +47,7 @@ def test_plots_clustered_ts_and_others_in_grid():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_clusters_using_sakoe_chiba():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()
@@ -71,7 +69,7 @@ def test_clusters_using_sakoe_chiba():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_returns_y_pred_as_binary_with_most_frequent_normal_and_other_classes_anomaly():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], timeseries_description=daily_ts)
@@ -85,7 +83,7 @@ def test_returns_y_pred_as_binary_with_most_frequent_normal_and_other_classes_an
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_dendrogram():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()

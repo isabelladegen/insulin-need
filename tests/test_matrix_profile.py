@@ -1,10 +1,15 @@
+import os
 from datetime import datetime, timezone
 
 import numpy as np
+import pytest
 from hamcrest import *
 
+from src.configurations import Configuration, Daily, GeneralisedCols
 from src.matrix_profile import MatrixProfile
 from src.preprocess import number_of_interval_in_days
+from src.read_preprocessed_df import ReadPreprocessedDataFrame
+from src.translate_into_timeseries import TranslateIntoTimeseries, WeeklyTimeseries
 from tests.helper.BgDfBuilder import create_time_stamps
 
 # create fake timeseries
@@ -78,3 +83,36 @@ def test_returns_top_motifs_for_ts():
 def test_can_show_top_motives():
     # no assert just checking the plot function does not error
     MatrixProfile(times, values, 3).plot_top_motives_for_max_distance_and_min_neighbours('y label', 'x_label', 2.0, 2)
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_matrix_profile_on_real_data_with_weekly_timeseries_of_daily_sampling():
+    raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
+    variate = GeneralisedCols.mean_iob.value
+    translate = TranslateIntoTimeseries(raw_df, WeeklyTimeseries(), [variate])
+    series = translate.to_continuous_time_series_dfs()
+
+    iob_mean, iob_mean_times = MatrixProfile.get_longest_series_values_times(series, variate)
+
+    window_size = 7
+    matrix_profile = MatrixProfile(iob_mean_times, iob_mean, window_size)
+    assert_that(matrix_profile.mp.shape, is_((77 - window_size + 1, 4)))
+
+    # plots the motif
+    matrix_profile.plot_ts_motif_and_profile(0, variate, "Datetime", False)
+    # describes the motiv in text
+    matrix_profile.describe_motif_x(0)
+
+    # top motives functionality
+    max_distance = 2.33
+    min_neighbours = 1
+    motif_distances, motive_indices = matrix_profile.top_motives(max_distance, min_neighbours)
+
+    # plot top motives
+    matrix_profile.plot_top_motives_for_max_distance_and_min_neighbours(variate, "Datetime",
+                                                                        max_distance, min_neighbours, show_mp=True)
+
+    # top discord
+    x = matrix_profile.least_similar_x()
+    matrix_profile.plot_ts_motif_and_profile(x, variate, "Datetime")
+    matrix_profile.describe_motif_x(x)

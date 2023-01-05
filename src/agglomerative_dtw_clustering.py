@@ -7,7 +7,7 @@ from tslearn.clustering import silhouette_score
 from tslearn.metrics import dtw
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from src.stats import TimeSeriesDescription
+from src.translate_into_timeseries import TimeSeriesDescription
 from src.timeseries_kmeans_clustering import ts_silhouette_samples
 
 

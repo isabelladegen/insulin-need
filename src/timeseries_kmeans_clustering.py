@@ -8,13 +8,12 @@ from tslearn.barycenters import dtw_barycenter_averaging
 from tslearn.clustering import TimeSeriesKMeans, silhouette_score
 from tslearn.metrics import cdist_soft_dtw_normalized, cdist_dtw
 from tslearn.preprocessing import TimeSeriesScalerMinMax
-
 from tslearn.utils import to_time_series_dataset, to_time_series
 
+from src.translate_into_timeseries import TimeSeriesDescription
+
+
 # Time series implementation of ts_silhouette_samples
-from src.stats import TimeSeriesDescription
-
-
 def ts_silhouette_samples(X, labels, metric=None, metric_params=None, n_jobs=None, verbose=0, **kwds):
     sklearn_metric = None
     if metric_params is None:

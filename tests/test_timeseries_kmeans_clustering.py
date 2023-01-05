@@ -6,11 +6,10 @@ import pandas as pd
 import pytest
 from hamcrest import *
 
-from src.configurations import Configuration, GeneralisedCols, Hourly
+from src.configurations import Configuration, GeneralisedCols, Hourly, Aggregators
 from src.preprocess import number_of_interval_in_days
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
-from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries
-from src.stats import DailyTimeseries
+from src.translate_into_timeseries import TranslateIntoTimeseries, DailyTimeseries
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 from tests.helper.BgDfBuilder import create_time_stamps
 
@@ -34,11 +33,11 @@ times = times1 + times2
 values = values1 + values2
 df = pd.DataFrame(data={time_col: times, value_col: values, value_col2: values3})
 daily_ts = DailyTimeseries()
-y_label = "mean"
+y_label = Aggregators.mean.value
 
 
 def test_plots_clusters_in_grid():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
 
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
@@ -48,7 +47,7 @@ def test_plots_clusters_in_grid():
 
 
 def test_uses_additional_parameters_for_distance_calculation():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     x_train = translate.to_x_train()
 
     distance_params = {"global_constraint": "sakoe_chiba",
@@ -70,7 +69,7 @@ def test_uses_additional_parameters_for_distance_calculation():
 
 
 def test_returns_y_of_classes():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     no_clusters = 5
     x_train = translate.to_x_train()
     km = TimeSeriesKMeansClustering(n_clusters=no_clusters, x_train=x_train, x_train_column_names=["IOB"],
@@ -83,7 +82,7 @@ def test_returns_y_of_classes():
 
 
 def test_plots_all_barrycenters_in_one_plot_for_one_column():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
 
@@ -94,7 +93,7 @@ def test_plots_all_barrycenters_in_one_plot_for_one_column():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_all_barrycenters_in_one_plot_for_multiple_columns():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()
@@ -103,13 +102,13 @@ def test_plots_all_barrycenters_in_one_plot_for_multiple_columns():
                                     x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])
 
     # no asserts as it generates a plot
-    km.plot_barry_centers_in_one_plot(y_label_substr='mean')
+    km.plot_barry_centers_in_one_plot(y_label_substr=y_label)
 
 
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_all_columns_barry_centers_in_one_plot_for_multiple_clusters():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()
@@ -124,7 +123,7 @@ def test_plots_all_columns_barry_centers_in_one_plot_for_multiple_clusters():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_plots_clustered_ts_and_others_in_grid():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
     x_full = translate.to_x_train()
@@ -137,7 +136,7 @@ def test_plots_clustered_ts_and_others_in_grid():
 
 
 def test_plots_silhouette_blob_for_k():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
 
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
@@ -146,7 +145,7 @@ def test_plots_silhouette_blob_for_k():
 
 
 def test_plots_silhouette_blob_for_small_ks():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
 
@@ -154,7 +153,7 @@ def test_plots_silhouette_blob_for_small_ks():
 
 
 def test_plots_silhouette_blob_for_single_row_ks():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
 
@@ -162,7 +161,7 @@ def test_plots_silhouette_blob_for_single_row_ks():
 
 
 def test_plots_silhouette_score_for_k():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
 
@@ -170,7 +169,7 @@ def test_plots_silhouette_score_for_k():
 
 
 def test_plots_elbow_method_for_k():
-    translate = ReshapeResampledDataIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
+    translate = TranslateIntoTimeseries(df, daily_ts, [GeneralisedCols.mean_iob])
     km = TimeSeriesKMeansClustering(n_clusters=4, x_train=translate.to_x_train(), x_train_column_names=["IOB"],
                                     timeseries_description=daily_ts)
 

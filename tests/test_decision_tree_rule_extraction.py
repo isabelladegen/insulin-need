@@ -5,8 +5,7 @@ from hamcrest import *
 from src.configurations import Configuration, Hourly, GeneralisedCols
 from src.decision_tree_rule_extraction import DecisionTreeRuleExtraction
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
-from src.reshape_resampled_data_into_timeseries import ReshapeResampledDataIntoTimeseries
-from src.stats import DailyTimeseries
+from src.translate_into_timeseries import TranslateIntoTimeseries, DailyTimeseries
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 
 
@@ -14,7 +13,7 @@ from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 def test_calculates_decision_trees_and_plots_describing_graphs():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     daily_ts = DailyTimeseries()
-    translate = ReshapeResampledDataIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
+    translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
     col_to_analyse = GeneralisedCols.mean_cob.value
     x_train = translate.to_x_train(cols=[col_to_analyse])

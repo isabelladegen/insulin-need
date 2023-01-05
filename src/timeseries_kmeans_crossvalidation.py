@@ -1,7 +1,7 @@
 import numpy as np
 from tslearn.preprocessing import TimeSeriesScalerMinMax
 
-from src.stats import TimeSeriesDescription
+from src.translate_into_timeseries import TimeSeriesDescription
 from src.timeseries_kmeans_clustering import TimeSeriesKMeansClustering
 
 

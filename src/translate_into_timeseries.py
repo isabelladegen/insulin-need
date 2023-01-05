@@ -4,11 +4,42 @@ import numpy as np
 import pandas as pd
 
 from src.configurations import GeneralisedCols
-from src.stats import TimeSeriesDescription, DailyTimeseries, WeeklyTimeseries
 
 
 @dataclass
-class TimeColumns:  # Daily TS
+class TimeSeriesDescription:
+    """ Describes granularity of ts
+
+    """
+    length = 0  # max length if variable length allowed
+    description = ''
+    x_ticks = []
+
+
+@dataclass
+class DailyTimeseries(TimeSeriesDescription):
+    """ Class to describe daily time series
+    - Df consists of hourly readings per day, max 24 readings
+    - each day is a new time series
+    """
+    length = 24
+    description = 'hours of day (UTC)'
+    x_ticks = list(range(0, 24, 2))
+
+
+@dataclass
+class WeeklyTimeseries(TimeSeriesDescription):
+    """ Class to describe weekly time series
+        - Df should have one reading per day for each day of the week
+        - each iso calendar week is a new time series
+    """
+    length = 7
+    description = 'Day of Week, 0=Monday'
+    x_ticks = list(range(0, 7))
+
+
+@dataclass
+class TimeColumns:  # for additional time features
     day_of_year = "day of year"
     week_of_year = "week"
     month = 'month'
@@ -17,13 +48,15 @@ class TimeColumns:  # Daily TS
     hour = 'hours'
 
 
-class ReshapeResampledDataIntoTimeseries:
-    """Class for turning resampled df into multidimensional numpy arrays of time series
+class TranslateIntoTimeseries:
+    """Class for turning resampled df into multidimensional of time series that can be used by different algorithms
 
-    - reshapes dates into time series
-    - drops rows that don't have a reading for each column
-    - drops dates with insufficient samples
-    - makes dates the index
+    - reshapes data into time series Daily or Weekly, e.g. 1d or 3d numpy array
+    - reshapes
+    - does some further preprocessing for this:
+        - drops rows that don't have a reading for each column
+        - drops dates with insufficient samples
+        - makes dates the index
 
     Methods
     -------
@@ -60,7 +93,7 @@ class ReshapeResampledDataIntoTimeseries:
              ...
              [iob_day_2_hour23 cob_day_2_hour23]],
             ...
-            [[iob_day_x_hour1 cob_dayx1_hour1],
+            [[iob_day_x_hour1 cob_day_x_hour1],
              [iob_day_x_hour2 cob_day_x_hour2],
              ...
              [iob_day_x_hour23
@@ -115,12 +148,19 @@ class ReshapeResampledDataIntoTimeseries:
             number_of_variates
         )
 
-    def to_vectorised_df(self, series_name):
-        """Returns df vectorised dataframe of shape X_train of shape=(n_ts, n_features) for variate series_name
+    def to_vectorised_df(self, value_column):
+        """Returns df vectorised dataframe of shape X_train of shape=(n_ts, n_features) for variate series_name.
+        The features are:
+        Daily TS:
+            - the value column for each hour of the day and additional time feature columns
+
+        Weekly TS:
+            - the value column for each day of the week and additional time feature columns
+
 
         Parameters
         ----------
-        series_name : str
+        value_column : str
             which of the multivariate series to return
 
         Returns
@@ -130,12 +170,12 @@ class ReshapeResampledDataIntoTimeseries:
             and n_features is each sample in each ts as a feature, plus the special time columns
         """
         # get numpy 1D array that's already shaped with hours resp weekdays as columns and drop 3rd dimension
-        array = self.to_x_train([series_name])
+        array = self.to_x_train([value_column])
         shape = array.shape
         twoDArray = array.reshape(shape[0], shape[1])
         df = pd.DataFrame(twoDArray)
 
-        series_short_name = series_name.split('/')[-1]
+        series_short_name = value_column.split('/')[-1]
         if isinstance(self.ts_description, DailyTimeseries):
             df.columns = [series_short_name + " at " + str(x) for x in df.columns]  # create strings
             time_columns = [TimeColumns.day_of_year, TimeColumns.week_day, TimeColumns.week_of_year, TimeColumns.month,
@@ -157,11 +197,40 @@ class ReshapeResampledDataIntoTimeseries:
             df[column] = list(reduced_df[column])
         return df
 
+    def to_continuous_time_series_dfs(self):
+        """Returns list of dfs with uninterrupted series of:
+        Daily TS:
+            - days without a gap inbetween
+
+        Weekly TS:
+            - weeks without a gap inbetween
+
+        Returns
+        -------
+        list of preprocessed dataframe split into continuous series
+
+        """
+        df = self.processed_df.copy()
+        # calculate gap in minutes between dates
+        deltas = self.processed_df.index.to_series().diff().astype('timedelta64[m]').astype('Int64')
+        if isinstance(self.ts_description, DailyTimeseries):
+            # needs a sample every 60min the series to continue
+            # get list of integer indices for all rows where the deltas that are bigger than 60min
+            split_at = [deltas.index.get_loc(t) for t in deltas.loc[deltas > 60].index]
+        elif isinstance(self.ts_description, WeeklyTimeseries):  # needs a sample for each day of a week
+            # needs a sample every 1440min (= every day) for the series to continue
+            split_at = [deltas.index.get_loc(t) for t in deltas.loc[deltas > 1440].index]
+        else:
+            raise NotImplementedError(
+                "Don't know how to split df for time series description of type " + str(type(self.ts_description)))
+        # split dataframe into those indexes
+        return np.split(df, split_at)
+
     def __preprocess(self, raw_df):
-        """ Filters the raw df ready to be translated into ndarrays
+        """ Filters and processes the raw resampled df ready to be translated
 
         - Sets index to datetime
-        - Drops NAs
+        - Drops NAs across all supplied columns
         - Drops dates with too few samples
 
         """
@@ -171,15 +240,15 @@ class ReshapeResampledDataIntoTimeseries:
         # drop rows where any of the columns have a nan -> all variates must have all values for all cols
         df.dropna(inplace=True)
 
-        # remove dates that have fewer readings than required (currently not supporting different length ts
+        # remove samples for which we don't have the full time series
         df.sort_index(inplace=True)
-        if isinstance(self.ts_description, DailyTimeseries):
+        if isinstance(self.ts_description, DailyTimeseries):  # needs a sample for each hour of the day
             # Find all dates that have 24 readings for equal length time periods
             dates = df.groupby(by=df.index.date).count()
             dates = dates.where(dates == self.ts_description.length).dropna()
             # Drop dates for which we don't have 24 readings
             df = df[np.isin(df.index.date, dates.index)]
-        elif isinstance(self.ts_description, WeeklyTimeseries):
+        elif isinstance(self.ts_description, WeeklyTimeseries):  # needs a sample for each day of a week
             # count how many days of data each week in each year has
             years_weeks = df.groupby(by=[df.index.year, df.index.isocalendar().week]).count()
             # Drop years_week for which we don't have 7 readings, one per day

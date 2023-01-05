@@ -4,17 +4,18 @@ import numpy as np
 import pandas as pd
 import stumpy
 from matplotlib import pyplot as plt
+from numpy import ndarray
 from scipy.stats import stats
 
 
 class MatrixProfile:
     label_font_size = 35
 
-    def __init__(self, time_series, values_series: [float], motif_length_m: int):
+    def __init__(self, time_series: [], values_series: ndarray, motif_length_m: int):
         self.__index = time_series
         self.__values = values_series
         self.__motif_length_m = motif_length_m
-        self.mp = stumpy.stump(self.__values, self.__motif_length_m)  # true matrix profile
+        self.mp = stumpy.stump(T_A=self.__values, m=self.__motif_length_m)
         self.__x_mp = self.__index[:self.mp.shape[0]]  # the last m+1 dates are missing as |mp|=|T|-m+1
         self.__motif_index_sorted = np.argsort(self.mp[:, 0])  # create array of indexes sorted by lowest distance first
         self.__z_score_normalised_values = stats.zscore(values_series)
@@ -153,3 +154,31 @@ class MatrixProfile:
         plt.tight_layout()
         plt.xlabel(x_label, fontsize=self.label_font_size)
         plt.show()
+
+    @classmethod
+    def get_longest_series_values_times(cls, continuous_time_series_dfs: [pd.DataFrame],
+                                        variate: str):
+        """ Method to calculate and reshape into values and time the longest continuous time series in a list of
+        dataframes
+
+        Parameters
+        ----------
+        continuous_time_series_dfs : [pd.DataFrame]
+            list of pandas dataframes of shape (time,variates) created by TranslateIntoTimeseries
+
+        variate : str
+            which variate to return the values for
+
+
+        Returns
+        -------
+        values, times : ndarray
+            shaped for the matrix profile
+        """
+        series_lengths = [df.shape[0] for df in continuous_time_series_dfs]
+        index_longest_series = np.argmax(series_lengths)
+        longest_series = continuous_time_series_dfs[index_longest_series]
+
+        values = longest_series[variate].to_numpy()
+        times = list(longest_series.index)
+        return values, times
