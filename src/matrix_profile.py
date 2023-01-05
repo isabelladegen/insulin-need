@@ -156,6 +156,12 @@ class MatrixProfile:
         plt.show()
 
     @classmethod
+    def get_values_and_times_for_variate(cls, df, variate):
+        values = df[variate].to_numpy()
+        times = list(df.index)
+        return values, times
+
+    @classmethod
     def get_longest_series_values_times(cls, continuous_time_series_dfs: [pd.DataFrame],
                                         variate: str):
         """ Method to calculate and reshape into values and time the longest continuous time series in a list of
@@ -179,6 +185,35 @@ class MatrixProfile:
         index_longest_series = np.argmax(series_lengths)
         longest_series = continuous_time_series_dfs[index_longest_series]
 
-        values = longest_series[variate].to_numpy()
-        times = list(longest_series.index)
-        return values, times
+        return cls.get_values_and_times_for_variate(longest_series, variate)
+
+    @classmethod
+    def get_values_times_includes_date(cls, continuous_ts_dfs, variate, date):
+        """ Method to find time series that includes date given and reshape into values and time for matrix profile
+
+           Parameters
+           ----------
+           continuous_ts_dfs : [pd.DataFrame]
+               list of pandas dataframes of shape (time,variates) created by TranslateIntoTimeseries
+
+           variate : str
+               which variate to return the values for
+
+           date : datetime
+               df selected must include this date
+
+
+           Returns
+           -------
+           values, times : ndarray
+               shaped for the matrix profile
+        """
+        df = None
+        for frame in continuous_ts_dfs:
+            if date.date() in frame.index.date:
+                df = frame
+
+        if df is None:
+            return None
+
+        return cls.get_values_and_times_for_variate(df, variate)
