@@ -9,7 +9,7 @@ from src.configurations import Configuration, Hourly, GeneralisedCols, Aggregato
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
 from src.translate_into_timeseries import TranslateIntoTimeseries, DailyTimeseries
 
-y_sub_label = Aggregators.mean.value
+y_sub_label = Aggregators.mean
 daily_ts = DailyTimeseries()
 
 
@@ -18,7 +18,7 @@ def test_plots_silhouette_analysis_for_clustering():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], timeseries_description=daily_ts)
 
     ac.plot_silhouette_analysis()
@@ -29,7 +29,7 @@ def test_plots_clustered_ts_and_others_in_grid():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
 
     no_ts = x_train.shape[0]
@@ -49,7 +49,7 @@ def test_clusters_using_sakoe_chiba():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
     no_ts = x_train.shape[0]
 
@@ -71,7 +71,7 @@ def test_returns_y_pred_as_binary_with_most_frequent_normal_and_other_classes_an
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], timeseries_description=daily_ts)
 
     result = ac.get_y_pred_as_binary()
@@ -85,7 +85,7 @@ def test_plots_dendrogram():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
     ac = AgglomerativeTSClustering(x_train=x_train, x_train_column_names=["COB"], timeseries_description=daily_ts,
                                    x_full=x_full, x_full_column_names=["IOB", "COB", "BG"])

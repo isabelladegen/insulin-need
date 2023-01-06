@@ -88,7 +88,7 @@ def test_can_show_top_motives():
 @pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
 def test_matrix_profile_on_real_data_with_weekly_timeseries_of_daily_sampling():
     raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
-    variate = GeneralisedCols.mean_iob.value
+    variate = GeneralisedCols.mean_iob
     translate = TranslateIntoTimeseries(raw_df, WeeklyTimeseries(), [variate])
     series = translate.to_continuous_time_series_dfs()
 

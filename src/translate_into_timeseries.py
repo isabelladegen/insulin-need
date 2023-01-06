@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,7 @@ class TimeSeriesDescription:
     length = 0  # max length if variable length allowed
     description = ''
     x_ticks = []
+    name = 'Base'
 
 
 @dataclass
@@ -25,6 +27,7 @@ class DailyTimeseries(TimeSeriesDescription):
     length = 24
     description = 'hours of day (UTC)'
     x_ticks = list(range(0, 24, 2))
+    name = 'Days'
 
 
 @dataclass
@@ -36,15 +39,28 @@ class WeeklyTimeseries(TimeSeriesDescription):
     length = 7
     description = 'Day of Week, 0=Monday'
     x_ticks = list(range(0, 7))
+    name = "Weeks"
+
+
+@dataclass
+class IrregularTimeseries(TimeSeriesDescription):
+    """ Class to describe irregular time series
+        - Df has any number of readings per day or hours with gaps
+        - this cannot be used by many methods
+    """
+    length = None
+    description = 'irregular'
+    x_ticks = None  # this cannot be used by many methods
+    name = "None"
 
 
 @dataclass
 class TimeColumns:  # for additional time features
     day_of_year = "day of year"
-    week_of_year = "week"
-    month = 'month'
-    year = 'year'
-    week_day = 'weekday'
+    week_of_year = "week of year"
+    month = 'months'
+    year = 'years'
+    week_day = 'weekdays'
     hour = 'hours'
 
 
@@ -132,6 +148,10 @@ class TranslateIntoTimeseries:
             X_train of shape=(n_ts, sz, d), where n_ts is number of time series,
             sz is length of each time series, and d=number of columns
         """
+        if isinstance(self.ts_description, IrregularTimeseries):  # no processing into time series
+            raise NotImplementedError(
+                "This translation does not make sense for time series description of type " + str(
+                    type(self.ts_description)))
         if cols:
             columns = cols
         else:
@@ -220,6 +240,9 @@ class TranslateIntoTimeseries:
         elif isinstance(self.ts_description, WeeklyTimeseries):  # needs a sample for each day of a week
             # needs a sample every 1440min (= every day) for the series to continue
             split_at = [deltas.index.get_loc(t) for t in deltas.loc[deltas > 1440].index]
+        elif isinstance(self.ts_description, IrregularTimeseries):  # no processing into time series
+            # enforce a sample every 1440min (= every day) for the series to continue
+            split_at = [deltas.index.get_loc(t) for t in deltas.loc[deltas > 1440].index]
         else:
             raise NotImplementedError(
                 "Don't know how to split df for time series description of type " + str(type(self.ts_description)))
@@ -256,6 +279,8 @@ class TranslateIntoTimeseries:
             # drop the rows where the year/week is not in the years_weeks index
             df = df[pd.MultiIndex.from_tuples(list(zip(df.index.year, df.index.isocalendar().week))).isin(
                 list(years_weeks.index.to_flat_index()))]
+        elif isinstance(self.ts_description, IrregularTimeseries):  # no processing into time series
+            df = df
         else:
             raise NotImplementedError(
                 "Don't know how to process provide time series description of type " + str(type(self.ts_description)))
@@ -271,6 +296,10 @@ class TranslateIntoTimeseries:
         pandas Dataframe
         """
         df = self.processed_df.copy()
+        return self.add_time_feature_columns(df)
+
+    @classmethod
+    def add_time_feature_columns(cls, df: pd.DataFrame):
         df[TimeColumns.hour] = df.index.hour
         df[TimeColumns.month] = df.index.month
         df[TimeColumns.week_day] = df.index.weekday
@@ -278,3 +307,43 @@ class TranslateIntoTimeseries:
         df[TimeColumns.week_of_year] = df.index.isocalendar().week
         df[TimeColumns.day_of_year] = df.index.day_of_year
         return df
+
+    @classmethod
+    def get_longest_df(cls, continuous_time_series_dfs: [pd.DataFrame]):
+        """ Method find the the longest continuous time series in a list of dataframes
+
+        Parameters
+        ----------
+        continuous_time_series_dfs : [pd.DataFrame]
+            list of pandas dataframes of shape (time,variates) created by TranslateIntoTimeseries
+
+
+        Returns
+        -------
+        dataframe : pd.DataFrame
+            longest DataFrame
+        """
+        dfs_lengths = [df.shape[0] for df in continuous_time_series_dfs]
+        index_longest_df = np.argmax(dfs_lengths)
+        return continuous_time_series_dfs[index_longest_df]
+
+    @classmethod
+    def get_df_including_date(cls, continuous_ts_dfs: [pd.DataFrame], date: datetime):
+        """ Method to find result in a list of dfs that includes the date given
+
+           Parameters
+           ----------
+           continuous_ts_dfs : [pd.DataFrame]
+               list of pandas dataframes of shape (time,variates) created by TranslateIntoTimeseries
+
+           date: datetime
+               date that needs to be in df
+
+           Returns
+           -------
+           dataframe : pd.DataFrame
+        """
+        for frame in continuous_ts_dfs:
+            if date.date() in frame.index.date:
+                return frame
+        return None  # no frame found that includes that date

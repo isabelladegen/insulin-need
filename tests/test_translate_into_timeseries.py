@@ -6,8 +6,9 @@ import pytest
 from hamcrest import *
 from pandas import DatetimeTZDtype
 
-from src.configurations import Configuration, Daily, Hourly, GeneralisedCols
-from src.translate_into_timeseries import TranslateIntoTimeseries, TimeColumns, DailyTimeseries, WeeklyTimeseries
+from src.configurations import Configuration, Daily, Hourly, GeneralisedCols, Irregular
+from src.translate_into_timeseries import TranslateIntoTimeseries, TimeColumns, DailyTimeseries, WeeklyTimeseries, \
+    IrregularTimeseries
 from src.read_preprocessed_df import ReadPreprocessedDataFrame
 
 # test data:
@@ -105,7 +106,7 @@ bg3 = 4.2
 no_samples = 24 + 23 + 24
 day1_times = [d10, d11, d12, d13, d14, d15, d16, d17, d18, d19, d110, d111, d112, d113, d114, d115,
               d116, d117, d118, d119, d120, d121, d122, d123]
-hourly_data = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d16, d17,
+hourly_data = {GeneralisedCols.datetime: [d10, d11, d12, d13, d14, d15, d16, d17,
                                                 d18, d19, d110, d111, d112, d113, d114, d115,
                                                 d116, d117, d118, d119, d120, d121, d122, d123,
                                                 d21, d22, d23, d24, d25, d26, d27, d28,
@@ -115,11 +116,11 @@ hourly_data = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d1
                                                 d39, d310, d311, d312, d313, d314, d315, d316,
                                                 d317, d318, d319, d320, d321, d322, d323,
                                                 ],
-               GeneralisedCols.mean_iob.value: [iob] * 24 + [iob2] * 23 + [iob3] * 24,
-               GeneralisedCols.mean_cob.value: [cob] * 24 + [cob2] * 23 + [cob3] * 24,  # same value for each time
-               GeneralisedCols.mean_bg.value: [bg] * 24 + [bg2] * 23 + [bg3] * 24,
-               GeneralisedCols.system.value: ['bla'] * no_samples,
-               GeneralisedCols.id.value: [zip_id1] * no_samples
+               GeneralisedCols.mean_iob: [iob] * 24 + [iob2] * 23 + [iob3] * 24,
+               GeneralisedCols.mean_cob: [cob] * 24 + [cob2] * 23 + [cob3] * 24,  # same value for each time
+               GeneralisedCols.mean_bg: [bg] * 24 + [bg2] * 23 + [bg3] * 24,
+               GeneralisedCols.system: ['bla'] * no_samples,
+               GeneralisedCols.id: [zip_id1] * no_samples
                }
 hourly_df = pd.DataFrame(hourly_data)
 hourly_df[GeneralisedCols.datetime] = pd.to_datetime(hourly_df[GeneralisedCols.datetime], utc=True,
@@ -200,7 +201,7 @@ def test_translates_df_into_2d_nparray_of_daily_ts_if_two_cols_provided():
 def test_translates_df_into_dataframe_with_time_features():
     translate = TranslateIntoTimeseries(hourly_df, daily_ts, mean_cols)
 
-    result = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+    result = translate.to_vectorised_df(GeneralisedCols.mean_iob)
 
     number_of_days = 2
     number_of_features = 24 + 5
@@ -226,15 +227,15 @@ def test_splits_preprocessed_df_into_dfs_of_continuous_days_of_daily_time_series
     day8_times = [d + timedelta(days=2) for d in day6_times]  # two days
     day9_times = [d + timedelta(days=1) for d in day8_times]
     data = {
-        GeneralisedCols.datetime.value: day1_times + day2_times + day3_times + day4_times + day6_times + day8_times + day9_times,
-        GeneralisedCols.mean_iob.value: [iob] * 24 + [iob2] * 24 + [iob] * 24 + [iob2] * 24 + [iob3] * 24 + [
+        GeneralisedCols.datetime: day1_times + day2_times + day3_times + day4_times + day6_times + day8_times + day9_times,
+        GeneralisedCols.mean_iob: [iob] * 24 + [iob2] * 24 + [iob] * 24 + [iob2] * 24 + [iob3] * 24 + [
             iob] * 24 + [iob3] * 24,
-        GeneralisedCols.mean_cob.value: [cob] * 24 + [cob2] * 24 + [cob] * 24 + [cob2] * 24 + [cob3] * 24 + [
+        GeneralisedCols.mean_cob: [cob] * 24 + [cob2] * 24 + [cob] * 24 + [cob2] * 24 + [cob3] * 24 + [
             cob] * 24 + [cob3] * 24,
-        GeneralisedCols.mean_bg.value: [bg] * 24 + [bg2] * 24 + [bg] * 24 + [bg2] * 24 + [bg3] * 24 + [
+        GeneralisedCols.mean_bg: [bg] * 24 + [bg2] * 24 + [bg] * 24 + [bg2] * 24 + [bg3] * 24 + [
             bg] * 24 + [bg3] * 24,
-        GeneralisedCols.system.value: ['bla'] * 7 * 24,
-        GeneralisedCols.id.value: [zip_id1] * 7 * 24
+        GeneralisedCols.system: ['bla'] * 7 * 24,
+        GeneralisedCols.id: [zip_id1] * 7 * 24
     }
     data_df = pd.DataFrame(data)
     data_df[GeneralisedCols.datetime] = pd.to_datetime(data_df[GeneralisedCols.datetime], utc=True, errors="raise")
@@ -276,7 +277,7 @@ def test_calculates_resampled_3d_and_1d_nparray_of_daily_time_series():
     translate = TranslateIntoTimeseries(df, daily_ts, mean_cols)
 
     x_3d = translate.to_x_train()
-    x_1d = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_1d = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
 
     assert_that(x_3d.shape, is_((30, 24, 3)))
     assert_that(x_1d.shape, is_((30, 24, 1)))
@@ -298,7 +299,7 @@ def test_returns_vectorised_df_daily_sampling():
     raw_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
     translate = TranslateIntoTimeseries(raw_df, daily_ts, mean_cols)
 
-    df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+    df = translate.to_vectorised_df(GeneralisedCols.mean_iob)
 
     number_of_days = 376
     number_of_features = 24 + 5
@@ -310,7 +311,7 @@ def test_returns_vectorised_df_weekly_sampling():
     raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
     translate = TranslateIntoTimeseries(raw_df, weekly_ts, mean_cols)
 
-    df = translate.to_vectorised_df(GeneralisedCols.mean_iob.value)
+    df = translate.to_vectorised_df(GeneralisedCols.mean_iob)
 
     number_of_days = 50
     number_of_features = 7 + 3
@@ -335,3 +336,94 @@ def test_returns_list_of_continuous_daily_time_series_for_hourly_sampling():
     results = translate.to_continuous_time_series_dfs()
 
     assert_that(len(results), is_(83))
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_works_for_irregular_sampled_and_irregular_time_series():
+    raw_df = ReadPreprocessedDataFrame(sampling=Irregular(), zip_id='14092221').df
+    translate = TranslateIntoTimeseries(raw_df, IrregularTimeseries(),
+                                        [GeneralisedCols.iob, GeneralisedCols.cob, GeneralisedCols.bg])
+
+    processed_df = translate.processed_df
+    assert_that(processed_df.shape[1], is_(3))
+
+    continuous_dfs = translate.to_continuous_time_series_dfs()
+    assert_that(len(continuous_dfs), is_(6))
+    assert_that(TranslateIntoTimeseries.get_longest_df(continuous_dfs).shape[0], is_(30898))
+    date = datetime(year=2018, month=9, day=29, tzinfo=timezone.utc)
+    assert_that(TranslateIntoTimeseries.get_df_including_date(continuous_dfs, date).shape[0], is_(20064))
+
+    time_features = translate.to_df_with_time_features()
+    assert_that(time_features.shape[1], is_(9))
+
+    try:
+        translate.to_x_train()
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass
+
+    try:
+        translate.to_vectorised_df(GeneralisedCols.iob)
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_works_for_daily_sampled_irregular_time_series():
+    raw_df = ReadPreprocessedDataFrame(sampling=Daily(), zip_id='14092221').df
+    translate = TranslateIntoTimeseries(raw_df, IrregularTimeseries(), mean_cols)
+
+    processed_df = translate.processed_df
+    assert_that(processed_df.shape[1], is_(3))
+
+    continuous_dfs = translate.to_continuous_time_series_dfs()
+    assert_that(len(continuous_dfs), is_(34))
+    assert_that(TranslateIntoTimeseries.get_longest_df(continuous_dfs).shape[0], is_(87))
+    date = datetime(year=2018, month=9, day=30, tzinfo=timezone.utc)
+    assert_that(TranslateIntoTimeseries.get_df_including_date(continuous_dfs, date).shape[0], is_(71))
+
+    time_features = translate.to_df_with_time_features()
+    assert_that(time_features.shape[1], is_(9))
+
+    try:
+        translate.to_x_train()
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass
+
+    try:
+        translate.to_vectorised_df(GeneralisedCols.iob)
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass
+
+
+@pytest.mark.skipif(not os.path.isdir(Configuration().perid_data_folder), reason="reads real data")
+def test_works_for_hourly_sampled_irregular_time_series():
+    raw_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='14092221').df
+    translate = TranslateIntoTimeseries(raw_df, IrregularTimeseries(), mean_cols)
+
+    processed_df = translate.processed_df
+    assert_that(processed_df.shape[1], is_(3))
+
+    continuous_dfs = translate.to_continuous_time_series_dfs()
+    assert_that(len(continuous_dfs), is_(5))
+    assert_that(TranslateIntoTimeseries.get_longest_df(continuous_dfs).shape[0], is_(7826))
+    date = datetime(year=2018, month=9, day=29, tzinfo=timezone.utc)
+    assert_that(TranslateIntoTimeseries.get_df_including_date(continuous_dfs, date).shape[0], is_(3205))
+
+    time_features = translate.to_df_with_time_features()
+    assert_that(time_features.shape[1], is_(9))
+
+    try:
+        translate.to_x_train()
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass
+
+    try:
+        translate.to_vectorised_df(GeneralisedCols.iob)
+        raise RuntimeError('Function didn\'t raise exception')
+    except NotImplementedError:
+        pass

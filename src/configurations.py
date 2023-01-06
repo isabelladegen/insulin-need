@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import pandas as pd
 import yaml
 from os import path
-from enum import Enum
 
 ROOT_DIR = path.realpath(path.join(path.dirname(__file__), '..'))
 
@@ -16,7 +15,8 @@ def load_private_yaml():
     return config
 
 
-class OpenAPSConfigs(str, Enum):
+@dataclass
+class OpenAPSConfigs:
     # values for openAPS
     iob = 'openaps/enacted/IOB'
     cob = 'openaps/enacted/COB'
@@ -25,7 +25,8 @@ class OpenAPSConfigs(str, Enum):
     system_name = 'OpenAPS'
 
 
-class Aggregators(str, Enum):
+@dataclass
+class Aggregators:
     # colum name and name of aggregation function
     min = 'min'
     max = 'max'
@@ -34,27 +35,28 @@ class Aggregators(str, Enum):
     count = 'count'
 
 
-class GeneralisedCols(str, Enum):
+@dataclass
+class GeneralisedCols:
     # generalised configs across systems
     iob = 'iob'
     cob = 'cob'
     bg = 'bg'
     id = 'id'
-    mean_iob = iob + ' ' + Aggregators.mean.value
-    mean_cob = cob + ' ' + Aggregators.mean.value
-    mean_bg = bg + ' ' + Aggregators.mean.value
-    min_iob = iob + ' ' + Aggregators.min.value
-    min_cob = cob + ' ' + Aggregators.min.value
-    min_bg = bg + ' ' + Aggregators.min.value
-    max_iob = iob + ' ' + Aggregators.max.value
-    max_cob = cob + ' ' + Aggregators.max.value
-    max_bg = bg + ' ' + Aggregators.max.value
-    std_iob = iob + ' ' + Aggregators.std.value
-    std_cob = cob + ' ' + Aggregators.std.value
-    std_bg = bg + ' ' + Aggregators.std.value
-    count_iob = iob + ' ' + Aggregators.count.value
-    count_cob = cob + ' ' + Aggregators.count.value
-    count_bg = bg + ' ' + Aggregators.count.value
+    mean_iob = iob + ' ' + Aggregators.mean
+    mean_cob = cob + ' ' + Aggregators.mean
+    mean_bg = bg + ' ' + Aggregators.mean
+    min_iob = iob + ' ' + Aggregators.min
+    min_cob = cob + ' ' + Aggregators.min
+    min_bg = bg + ' ' + Aggregators.min
+    max_iob = iob + ' ' + Aggregators.max
+    max_cob = cob + ' ' + Aggregators.max
+    max_bg = bg + ' ' + Aggregators.max
+    std_iob = iob + ' ' + Aggregators.std
+    std_cob = cob + ' ' + Aggregators.std
+    std_bg = bg + ' ' + Aggregators.std
+    count_iob = iob + ' ' + Aggregators.count
+    count_cob = cob + ' ' + Aggregators.count
+    count_bg = bg + ' ' + Aggregators.count
     datetime = 'datetime'
     system = 'system'
 
@@ -63,19 +65,15 @@ class GeneralisedCols(str, Enum):
 class Resampling:
     max_gap_in_min = None
     # how big the gap between two datetime stamps can be
-    min_no_samples_per_interval = None
-    # how many samples at max_gap_per_min intervals there have to be
     sample_rule = None
     # the frequency of the regular time series after resampling: 1H a reading every hour, 1D a reading every day
-    needs_max_gap_checking = False
-    # if max gap in min is smaller than the sample rule time period (e.g  180min and 1D) than max_gap_checking is needed
 
-    description = 'Base'
-    agg_cols = [Aggregators.min.value, Aggregators.max.value, Aggregators.mean.value,
-                Aggregators.std.value, Aggregators.count.value]
+    description = 'None'
+    agg_cols = [Aggregators.min, Aggregators.max, Aggregators.mean,
+                Aggregators.std, Aggregators.count]
 
-    general_agg_cols_dictionary = {GeneralisedCols.id.value: 'first',
-                                   GeneralisedCols.system.value: 'first',
+    general_agg_cols_dictionary = {GeneralisedCols.id: 'first',
+                                   GeneralisedCols.system: 'first',
                                    }
 
     @staticmethod
@@ -85,7 +83,7 @@ class Resampling:
 
 @dataclass
 class Irregular(Resampling):
-    description = 'irregular'
+    description = 'None'
 
     @staticmethod
     def csv_file_name():
@@ -98,7 +96,7 @@ class Hourly(Resampling):
     # there needs to be a reading at least every hour for the data points to be resampled for that hour
     sample_rule = '1H'
     needs_max_gap_checking = False
-    description = 'hourly resampled'
+    description = 'Hourly'
 
     @staticmethod
     def csv_file_name():
@@ -111,7 +109,7 @@ class Daily(Resampling):
     # a reading every three hours for a daily resampling to be created
     sample_rule = '1D'
     needs_max_gap_checking = True
-    description = 'daily resampled'
+    description = 'Daily'
 
     @staticmethod
     def csv_file_name():
@@ -193,42 +191,41 @@ class Configuration:
     @staticmethod
     def info_columns():
         # returns the columns that have other info but not values to resample
-        return [GeneralisedCols.datetime.value, GeneralisedCols.id.value, GeneralisedCols.system.value]
+        return [GeneralisedCols.datetime, GeneralisedCols.id, GeneralisedCols.system]
 
     @staticmethod
     def value_columns_to_resample():
         # returns all columns with values that need resampling
-        return [GeneralisedCols.iob.value, GeneralisedCols.cob.value, GeneralisedCols.bg.value]
+        return [GeneralisedCols.iob, GeneralisedCols.cob, GeneralisedCols.bg]
 
     @staticmethod
     def resampled_value_columns():
         # returns the columns for resampled values
-        return [GeneralisedCols.mean_iob.value,
-                GeneralisedCols.mean_cob.value,
-                GeneralisedCols.mean_bg.value,
-                GeneralisedCols.min_iob.value,
-                GeneralisedCols.min_cob.value,
-                GeneralisedCols.min_bg.value,
-                GeneralisedCols.max_iob.value,
-                GeneralisedCols.max_cob.value,
-                GeneralisedCols.max_bg.value,
-                GeneralisedCols.std_iob.value,
-                GeneralisedCols.std_cob.value,
-                GeneralisedCols.std_bg.value,
-                ]
+        return [GeneralisedCols.mean_iob,
+                GeneralisedCols.mean_cob,
+                GeneralisedCols.mean_bg,
+                GeneralisedCols.min_iob,
+                GeneralisedCols.min_cob,
+                GeneralisedCols.min_bg,
+                GeneralisedCols.max_iob,
+                GeneralisedCols.max_cob,
+                GeneralisedCols.max_bg,
+                GeneralisedCols.std_iob,
+                GeneralisedCols.std_cob,
+                GeneralisedCols.std_bg]
 
     @staticmethod
     def resampling_count_columns():
-        return [GeneralisedCols.count_iob.value,
-                GeneralisedCols.count_cob.value,
-                GeneralisedCols.count_bg.value
+        return [GeneralisedCols.count_iob,
+                GeneralisedCols.count_cob,
+                GeneralisedCols.count_bg
                 ]
 
     @staticmethod
     def resampled_mean_columns():
-        return [GeneralisedCols.mean_iob.value,
-                GeneralisedCols.mean_cob.value,
-                GeneralisedCols.mean_bg.value
+        return [GeneralisedCols.mean_iob,
+                GeneralisedCols.mean_cob,
+                GeneralisedCols.mean_bg,
                 ]
 
     def enacted_cols(self):

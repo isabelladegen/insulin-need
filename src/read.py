@@ -176,7 +176,7 @@ def read_entries_file_into_df(archive, file, read_record, config):
 
 # reads device status file into df and adds it to read_record
 def read_device_status_file_into_df(archive, file, read_record, config):
-    read_record.system = OpenAPSConfigs.system_name.value  # TODO set to appropriate system once others read too
+    read_record.system = OpenAPSConfigs.system_name  # TODO set to appropriate system once others read too
     specific_cols_dic = config.device_status_col_type
     if specific_cols_dic:  # preprocess reading
         with archive.open(file, mode="r") as header_context:

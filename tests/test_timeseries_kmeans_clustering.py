@@ -26,14 +26,14 @@ times2 = create_time_stamps(start_date2, 2 * min_series_length, max_interval)
 values1 = list(np.random.uniform(low=0.1, high=14.6, size=min_series_length))
 values2 = list(np.random.uniform(low=0.5, high=10.6, size=2 * min_series_length))
 values3 = list(np.random.uniform(low=90, high=400, size=min_series_length + 2 * min_series_length))
-time_col = GeneralisedCols.datetime.value
-value_col = GeneralisedCols.mean_iob.value
+time_col = GeneralisedCols.datetime
+value_col = GeneralisedCols.mean_iob
 value_col2 = 'another col'
 times = times1 + times2
 values = values1 + values2
 df = pd.DataFrame(data={time_col: times, value_col: values, value_col2: values3})
 daily_ts = DailyTimeseries()
-y_label = Aggregators.mean.value
+y_label = Aggregators.mean
 
 
 def test_plots_clusters_in_grid():
@@ -95,7 +95,7 @@ def test_plots_all_barrycenters_in_one_plot_for_multiple_columns():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
     km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"],
                                     timeseries_description=daily_ts,
@@ -110,7 +110,7 @@ def test_plots_all_columns_barry_centers_in_one_plot_for_multiple_clusters():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
     km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"],
                                     timeseries_description=daily_ts,
@@ -125,7 +125,7 @@ def test_plots_clustered_ts_and_others_in_grid():
     real_df = ReadPreprocessedDataFrame(sampling=Hourly(), zip_id='13484299').df
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob.value])
+    x_train = translate.to_x_train(cols=[GeneralisedCols.mean_cob])
     x_full = translate.to_x_train()
     km = TimeSeriesKMeansClustering(n_clusters=3, x_train=x_train, x_train_column_names=["COB"],
                                     timeseries_description=daily_ts,

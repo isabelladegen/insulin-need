@@ -15,7 +15,7 @@ def test_calculates_decision_trees_and_plots_describing_graphs():
     daily_ts = DailyTimeseries()
     translate = TranslateIntoTimeseries(real_df, daily_ts, Configuration.resampled_mean_columns())
 
-    col_to_analyse = GeneralisedCols.mean_cob.value
+    col_to_analyse = GeneralisedCols.mean_cob
     x_train = translate.to_x_train(cols=[col_to_analyse])
     x_full = translate.to_x_train()
 

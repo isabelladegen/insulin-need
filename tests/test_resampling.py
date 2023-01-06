@@ -61,17 +61,17 @@ additional_cob2 = 3.5
 bg = 6.4
 additional_bg1 = 15.6
 additional_bg2 = 2.2
-irregular_data = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d16, d17,
+irregular_data = {GeneralisedCols.datetime: [d10, d11, d12, d13, d14, d15, d16, d17,
                                                    d20, d21, d22, d23, d24, d25, d26, d27,
                                                    d30, d301, d31, d311, d32, d321, d33, d34, d35, d36, d37],
-                  GeneralisedCols.iob.value: [iob] * 16 + [iob, additional_iob, iob, additional_iob2, iob,
+                  GeneralisedCols.iob: [iob] * 16 + [iob, additional_iob, iob, additional_iob2, iob,
                                                            additional_iob] + [iob] * 5,
-                  GeneralisedCols.cob.value: [cob] * 16 + [cob, additional_cob1, cob, additional_cob2, cob,
+                  GeneralisedCols.cob: [cob] * 16 + [cob, additional_cob1, cob, additional_cob2, cob,
                                                            additional_cob1] + [cob] * 5,  # same value for each time
-                  GeneralisedCols.bg.value: [bg] * 16 + [bg, additional_bg1, bg, additional_bg2, bg,
+                  GeneralisedCols.bg: [bg] * 16 + [bg, additional_bg1, bg, additional_bg2, bg,
                                                          additional_bg1] + [bg] * 5,
-                  GeneralisedCols.system.value: ['bla'] * no_samples,
-                  GeneralisedCols.id.value: [zip_id1] * no_samples
+                  GeneralisedCols.system: ['bla'] * no_samples,
+                  GeneralisedCols.id: [zip_id1] * no_samples
                   }
 irregular_df = pd.DataFrame(irregular_data)
 irregular_df[GeneralisedCols.datetime] = pd.to_datetime(irregular_df[GeneralisedCols.datetime], utc=True,
@@ -125,14 +125,14 @@ def test_turns_irregular_df_into_daily_sampled_min_max_mean_std_df_for_downsampl
 
 
 def test_ensures_sampling_is_frequent_enough_for_each_variate_for_daily_resampling():
-    just_iob = {GeneralisedCols.datetime.value: [d10, d11, d12, d13, d14, d15, d16, d17,
+    just_iob = {GeneralisedCols.datetime: [d10, d11, d12, d13, d14, d15, d16, d17,
                                                  d20, d21, d22, d23, d24, d25, d26, d27
                                                  ],
-                GeneralisedCols.iob.value: [iob] * 16,  # sufficient values
-                GeneralisedCols.cob.value: [cob] * 3 + [nan] * 5 + [cob] * 8,  # not enough values for day 1 and 2
-                GeneralisedCols.bg.value: [bg] * 8 + [nan] * 5 + [bg] * 3,  # not enough values for day 2
-                GeneralisedCols.system.value: ['bla'] * 16,
-                GeneralisedCols.id.value: [zip_id1] * 16
+                GeneralisedCols.iob: [iob] * 16,  # sufficient values
+                GeneralisedCols.cob: [cob] * 3 + [nan] * 5 + [cob] * 8,  # not enough values for day 1 and 2
+                GeneralisedCols.bg: [bg] * 8 + [nan] * 5 + [bg] * 3,  # not enough values for day 2
+                GeneralisedCols.system: ['bla'] * 16,
+                GeneralisedCols.id: [zip_id1] * 16
                 }
     just_iob_df = pd.DataFrame(just_iob)
     just_iob_df[GeneralisedCols.datetime] = pd.to_datetime(just_iob_df[GeneralisedCols.datetime], utc=True,
@@ -178,12 +178,12 @@ def test_turns_irregular_df_into_regular_hourly_sampled_df():
     bg1 = 5.5
     bg2 = 16.4
 
-    data = {GeneralisedCols.datetime.value: [no_reading_t, beginning_t, end_t, two_middle_t1, two_middle_t2],
-            GeneralisedCols.iob.value: [np.NaN, iob1, iob2, iob1, iob2],
-            GeneralisedCols.cob.value: [np.NaN, cob1, np.NaN, np.NaN, cob2],
-            GeneralisedCols.bg.value: [np.NaN, np.NaN, bg2, bg1, bg2],
-            GeneralisedCols.system.value: ['ttte'] * no_times,
-            GeneralisedCols.id.value: [zip_id1] * no_times
+    data = {GeneralisedCols.datetime: [no_reading_t, beginning_t, end_t, two_middle_t1, two_middle_t2],
+            GeneralisedCols.iob: [np.NaN, iob1, iob2, iob1, iob2],
+            GeneralisedCols.cob: [np.NaN, cob1, np.NaN, np.NaN, cob2],
+            GeneralisedCols.bg: [np.NaN, np.NaN, bg2, bg1, bg2],
+            GeneralisedCols.system: ['ttte'] * no_times,
+            GeneralisedCols.id: [zip_id1] * no_times
             }
     df_irregular = pd.DataFrame(data)
     df_irregular[GeneralisedCols.datetime] = pd.to_datetime(df_irregular[GeneralisedCols.datetime], utc=True,
@@ -268,12 +268,12 @@ def test_can_deal_with_empty_dataframe():
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
     t2 = datetime(year=2019, month=1, day=10, hour=2, minute=5, tzinfo=timezone.utc)
     t3 = datetime(year=2019, month=1, day=10, hour=3, minute=5, tzinfo=timezone.utc)
-    empty_data = {GeneralisedCols.datetime.value: [t1, t2, t3],
-                  GeneralisedCols.iob.value: nan_list,
-                  GeneralisedCols.cob.value: nan_list,
-                  GeneralisedCols.bg.value: nan_list,
-                  GeneralisedCols.system.value: nan_list,
-                  GeneralisedCols.id.value: nan_list
+    empty_data = {GeneralisedCols.datetime: [t1, t2, t3],
+                  GeneralisedCols.iob: nan_list,
+                  GeneralisedCols.cob: nan_list,
+                  GeneralisedCols.bg: nan_list,
+                  GeneralisedCols.system: nan_list,
+                  GeneralisedCols.id: nan_list
                   }
     df_irregular = pd.DataFrame(empty_data)
     df = ResampleDataFrame(df_irregular).resample_to(Daily())
@@ -287,12 +287,12 @@ def test_can_deal_with_empty_dataframe():
 def test_returns_none_value_columns_first_for_empty_df():
     nan_list = [np.NaN]
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
-    empty_data = {GeneralisedCols.datetime.value: [t1],
-                  GeneralisedCols.iob.value: nan_list,
-                  GeneralisedCols.cob.value: nan_list,
-                  GeneralisedCols.bg.value: nan_list,
-                  GeneralisedCols.system.value: nan_list,
-                  GeneralisedCols.id.value: nan_list
+    empty_data = {GeneralisedCols.datetime: [t1],
+                  GeneralisedCols.iob: nan_list,
+                  GeneralisedCols.cob: nan_list,
+                  GeneralisedCols.bg: nan_list,
+                  GeneralisedCols.system: nan_list,
+                  GeneralisedCols.id: nan_list
                   }
     df_irregular = pd.DataFrame(empty_data)
     df = ResampleDataFrame(df_irregular).resample_to(Daily())
@@ -308,12 +308,12 @@ def test_returns_none_value_columns_first_for_empty_df():
 def test_returns_none_value_columns_first():
     values = [10.0]
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
-    empty_data = {GeneralisedCols.datetime.value: [t1],
-                  GeneralisedCols.iob.value: values,
-                  GeneralisedCols.cob.value: values,
-                  GeneralisedCols.bg.value: values,
-                  GeneralisedCols.system.value: values,
-                  GeneralisedCols.id.value: values
+    empty_data = {GeneralisedCols.datetime: [t1],
+                  GeneralisedCols.iob: values,
+                  GeneralisedCols.cob: values,
+                  GeneralisedCols.bg: values,
+                  GeneralisedCols.system: values,
+                  GeneralisedCols.id: values
                   }
     df_irregular = pd.DataFrame(empty_data)
     df = ResampleDataFrame(df_irregular).resample_to(Hourly())
@@ -336,12 +336,12 @@ def test_can_deal_with_single_day_of_data():
     t6 = datetime(year=2019, month=1, day=10, hour=15, minute=5, tzinfo=timezone.utc)
     t7 = datetime(year=2019, month=1, day=10, hour=18, minute=5, tzinfo=timezone.utc)
     t8 = datetime(year=2019, month=1, day=10, hour=21, minute=5, tzinfo=timezone.utc)
-    data = {GeneralisedCols.datetime.value: [t1, t2, t3, t4, t5, t6, t7, t8],
-                  GeneralisedCols.iob.value: values,
-                  GeneralisedCols.cob.value: values,
-                  GeneralisedCols.bg.value: values,
-                  GeneralisedCols.system.value: values,
-                  GeneralisedCols.id.value: values
+    data = {GeneralisedCols.datetime: [t1, t2, t3, t4, t5, t6, t7, t8],
+                  GeneralisedCols.iob: values,
+                  GeneralisedCols.cob: values,
+                  GeneralisedCols.bg: values,
+                  GeneralisedCols.system: values,
+                  GeneralisedCols.id: values
                   }
     df_irregular = pd.DataFrame(data)
     df = ResampleDataFrame(df_irregular).resample_to(Daily())
@@ -357,12 +357,12 @@ def test_counts_as_integer_types():
     t1 = datetime(year=2019, month=1, day=10, hour=1, minute=5, tzinfo=timezone.utc)
     t2 = datetime(year=2019, month=1, day=10, hour=1, minute=55, tzinfo=timezone.utc)
     t3 = datetime(year=2019, month=1, day=10, hour=2, minute=5, tzinfo=timezone.utc)
-    empty_data = {GeneralisedCols.datetime.value: [t1, t2, t3],
-                  GeneralisedCols.iob.value: values,
-                  GeneralisedCols.cob.value: [np.NaN, np.NaN, np.NaN],
-                  GeneralisedCols.bg.value: [np.NaN, np.NaN, np.NaN],
-                  GeneralisedCols.system.value: values,
-                  GeneralisedCols.id.value: values
+    empty_data = {GeneralisedCols.datetime: [t1, t2, t3],
+                  GeneralisedCols.iob: values,
+                  GeneralisedCols.cob: [np.NaN, np.NaN, np.NaN],
+                  GeneralisedCols.bg: [np.NaN, np.NaN, np.NaN],
+                  GeneralisedCols.system: values,
+                  GeneralisedCols.id: values
                   }
     df_irregular = pd.DataFrame(empty_data)
     df = ResampleDataFrame(df_irregular).resample_to(Hourly())

@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import sqrt
 
 import numpy as np
@@ -6,6 +7,8 @@ import stumpy
 from matplotlib import pyplot as plt
 from numpy import ndarray
 from scipy.stats import stats
+
+from src.translate_into_timeseries import TranslateIntoTimeseries
 
 
 class MatrixProfile:
@@ -181,14 +184,11 @@ class MatrixProfile:
         values, times : ndarray
             shaped for the matrix profile
         """
-        series_lengths = [df.shape[0] for df in continuous_time_series_dfs]
-        index_longest_series = np.argmax(series_lengths)
-        longest_series = continuous_time_series_dfs[index_longest_series]
-
-        return cls.get_values_and_times_for_variate(longest_series, variate)
+        biggest_df = TranslateIntoTimeseries.get_longest_df(continuous_time_series_dfs)
+        return cls.get_values_and_times_for_variate(biggest_df, variate)
 
     @classmethod
-    def get_values_times_includes_date(cls, continuous_ts_dfs, variate, date):
+    def get_values_times_includes_date(cls, continuous_ts_dfs, variate, date: datetime):
         """ Method to find time series that includes date given and reshape into values and time for matrix profile
 
            Parameters
@@ -208,12 +208,5 @@ class MatrixProfile:
            values, times : ndarray
                shaped for the matrix profile
         """
-        df = None
-        for frame in continuous_ts_dfs:
-            if date.date() in frame.index.date:
-                df = frame
-
-        if df is None:
-            return None
-
+        df = TranslateIntoTimeseries.get_df_including_date(continuous_ts_dfs, date)
         return cls.get_values_and_times_for_variate(df, variate)

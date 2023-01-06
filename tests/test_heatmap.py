@@ -154,7 +154,7 @@ def test_plots_multivariate_heatmap_for_hourly_sampled_file():
 
     heatmap = Heatmap(df, sampling)
 
-    cols_to_plot = [GeneralisedCols.mean_iob.value, GeneralisedCols.mean_cob.value, GeneralisedCols.mean_bg.value]
+    cols_to_plot = [GeneralisedCols.mean_iob, GeneralisedCols.mean_cob, GeneralisedCols.mean_bg]
     heatmap.plot_heatmap(plot_rows=cols_to_plot,
                          x_axis=Months(),
                          y_axis=Weekdays())
@@ -173,7 +173,7 @@ def test_plots_multivariate_heatmap_for_daily_sampled_file():
 
     heatmap = Heatmap(df, sampling)
 
-    cols_to_plot = [GeneralisedCols.mean_iob.value, GeneralisedCols.mean_cob.value, GeneralisedCols.mean_bg.value]
+    cols_to_plot = [GeneralisedCols.mean_iob, GeneralisedCols.mean_cob, GeneralisedCols.mean_bg]
     heatmap.plot_heatmap(plot_rows=cols_to_plot,
                          x_axis=Months(),
                          y_axis=Weekdays())

@@ -89,7 +89,7 @@ class ResampleDataFrame:
                     raise NotImplementedError
 
             # resample
-            sub_df = sub_df.set_index([GeneralisedCols.datetime.value])
+            sub_df = sub_df.set_index([GeneralisedCols.datetime])
             agg_dict = dict(sampling.general_agg_cols_dictionary)
             agg_dict[column] = sampling.agg_cols
             resampled_df = sub_df.resample(sampling.sample_rule).agg(agg_dict)
