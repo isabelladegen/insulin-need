@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 from src.configurations import Resampling, GeneralisedCols, Aggregators
 from src.translate_into_timeseries import TimeColumns, TimeSeriesDescription, TranslateIntoTimeseries
@@ -39,7 +40,7 @@ class Stats:
             value_columns : [GeneralisedCols]
                 Which value columns of the df to calculate statistics for
         """
-        self.__df = df
+        self.df_with_time_cols = TranslateIntoTimeseries.add_time_feature_columns(df)
         self.__sampling = sampling
         self.__ts_description = ts_description
         self.__time_columns = times
@@ -49,48 +50,35 @@ class Stats:
         self.stats_per_time = self.__calculate_stats()
         self.font_size = 20
         self.tick_font_size = 15
+        # creates a string of all the indexes and counts the characters of all the numbers in the x ticks
+        # to decide on the width ratios for the plots
+        self.no_x_values = [len(''.join(map(str, list(df.index)))) for df in
+                            self.stats_per_time.values()]
 
     def plot_confidence_interval(self, show_title: bool = True):
         """Plots confidence interval for the given time and value columns
         """
         rows_values = self.__value_columns
         columns_times = self.__time_columns
-        plt.rcParams.update(plt.rcParamsDefault)
-        plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
 
-        # creates a string of all the indexes and counts the characters of all the numbers in the x ticks
-        # to decide on the width for the plot
-        no_x_values = [len(''.join(map(str, list(df.index)))) for df in
-                       self.stats_per_time.values()]  # used for width ratios of the plots
-        fig, axes = plt.subplots(nrows=len(rows_values),
-                                 ncols=len(columns_times),
-                                 sharey='row',
-                                 sharex='col',
-                                 squeeze=0,
-                                 figsize=(20, len(rows_values)*5),
-                                 gridspec_kw={'width_ratios': no_x_values})
+        # style plot
+        axes, fig = self.__reset_plt_for_row_value_column_times_plots(columns_times, rows_values)
         horizontal_line_width = 0.5
         line_width = 4
         line_color = "steelblue"
 
-        # series of all the max values for different value_cols
+        # calculate max/min ci values per row accross all time columns
         max_ci = pd.concat(
             [df[ConfidenceIntervalCols.ci_96hi].max().to_frame().T for df in self.stats_per_time.values()]).max()
-
-        # series of all the min values for different value_cols
         min_ci = pd.concat(
             [df[ConfidenceIntervalCols.ci_96lo].min().to_frame().T for df in self.stats_per_time.values()]).min()
 
+        # plot each box
         for cdx, column in enumerate(columns_times):
             stats_df = self.stats_per_time[column]
             x = list(stats_df.index)
-
             for rdx, row in enumerate(rows_values):
-                # plotting one square of the subplot
-                mean = list(stats_df[Aggregators.mean][row])
-                ci_hi = list(stats_df[ConfidenceIntervalCols.ci_96hi][row])
-                ci_low = list(stats_df[ConfidenceIntervalCols.ci_96lo][row])
-
+                # configure plot size and accuracy
                 y_min = min_ci[row]
                 y_max = max_ci[row]
                 spacer = y_max / 10
@@ -99,25 +87,28 @@ class Stats:
                 left = [xs - horizontal_line_width / 2 for xs in x]
                 right = [xs + horizontal_line_width / 2 for xs in x]
 
-                ax = axes[rdx][cdx]  # get plot in the grid
-                ax.plot([x, x], [ci_hi, ci_low], linewidth=line_width, color=line_color, )  # vertical line
-                ax.plot([left, right], [ci_hi, ci_hi], linewidth=line_width,
-                        color=line_color, )  # horizontal top line
-                ax.plot([left, right], [ci_low, ci_low], color=line_color,
-                        linewidth=line_width)  # horizontal top line
-                ax.plot(x, mean, 'o', color='r', markersize=6)  # dot
-                # if len(x) < 10:  # show every tick
-                ax.set_xticks(x)
-                # else:  # only show every other
-                #     ax.set_xticks(x[::2])
+                # values to plot
+                mean = list(stats_df[Aggregators.mean][row])
+                ci_hi = list(stats_df[ConfidenceIntervalCols.ci_96hi][row])
+                ci_low = list(stats_df[ConfidenceIntervalCols.ci_96lo][row])
 
+                ax = axes[rdx][cdx]
+                # plot vertical line
+                ax.plot([x, x], [ci_hi, ci_low], linewidth=line_width, color=line_color, )
+                # plot bottom and top horizontal lines
+                ax.plot([left, right], [ci_hi, ci_hi], linewidth=line_width, color=line_color, )
+                ax.plot([left, right], [ci_low, ci_low], color=line_color, linewidth=line_width)
+                # plot mean dot
+                ax.plot(x, mean, 'o', color='r', markersize=6)
+
+                ax.set_xticks(x)
                 # forcing all y_axis  in a row to be the same to ensure we can compare across different times
                 ax.set(ylim=y_axis_scale)
 
-                # some styling things
-                ax.grid(which='major', alpha=0.3, color='grey')
+                # more styling
                 ax.tick_params(axis='x', labelsize=self.tick_font_size)
                 ax.tick_params(axis='y', labelsize=self.tick_font_size)
+                ax.grid(which='major', alpha=0.3, color='grey')
 
                 # print labels
                 if cdx == 0:  # first column print y labels
@@ -126,18 +117,86 @@ class Stats:
                 if rdx == len(rows_values) - 1:  # last row print x labels
                     ax.set_xlabel(column, fontsize=self.font_size)
 
+        self.__show_title_for_plot(fig, show_title)
+
+    def plot_violin_plot(self, show_title: bool = True):
+        """Plots violin plots for the given time and value columns
+        """
+        rows_values = self.__value_columns
+        columns_values = self.__time_columns
+
+        # style plot
+        axes, fig = self.__reset_plt_for_row_value_column_times_plots(columns_values, rows_values)
+        palette = 'Blues'
+        sns.set(style="whitegrid")
+
+        for rdx, row in enumerate(rows_values):
+            for cdx, column in enumerate(columns_values):
+                ax = sns.violinplot(x=column, y=row, data=self.df_with_time_cols, ax=axes[rdx, cdx], palette=palette)
+                self.__style_shared_axis_labels(ax, cdx, column, rdx, row, len(rows_values))
+
+                # print labels
+                if cdx == 0:  # first column print y labels
+                    ax.set_ylabel(row, fontsize=self.font_size)
+                if rdx == len(rows_values) - 1:  # last row print x labels
+                    ax.set_xlabel(column, fontsize=self.font_size)
+
+        self.__show_title_for_plot(fig, show_title)
+
+    def plot_box_plot(self, show_title: bool = True):
+        """Plots box plots for the given time and value columns
+        """
+        rows_values = self.__value_columns
+        columns_values = self.__time_columns
+
+        # style plot
+        axes, fig = self.__reset_plt_for_row_value_column_times_plots(columns_values, rows_values)
+        palette = 'Blues'
+        sns.set(style="whitegrid")
+
+        for rdx, row in enumerate(rows_values):
+            for cdx, column in enumerate(columns_values):
+                ax = sns.boxplot(x=column, y=row, data=self.df_with_time_cols, ax=axes[rdx, cdx], palette=palette)
+                self.__style_shared_axis_labels(ax, cdx, column, rdx, row, len(rows_values))
+
+        self.__show_title_for_plot(fig, show_title)
+
+    def __show_title_for_plot(self, fig, show_title):
         if show_title:
-            title = "Confidence intervals. Resampling: " + self.__sampling.description + ", TS reshaping: " + \
+            title = "Resampling: " + self.__sampling.description + ", TS reshaping: " + \
                     self.__ts_description.name
             fig.suptitle(title, fontsize=self.font_size)
         fig.tight_layout()
         plt.show()
 
+    def __style_shared_axis_labels(self, ax, cdx, column, rdx, row, number_of_rows):
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        ax.tick_params(axis='x', labelsize=self.tick_font_size)
+        ax.tick_params(axis='y', labelsize=self.tick_font_size)
+
+        # print labels
+        if cdx == 0:  # first column print y labels
+            ax.set_ylabel(row, fontsize=self.font_size)
+        if rdx == number_of_rows - 1:  # last row print x labels
+            ax.set_xlabel(column, fontsize=self.font_size)
+
+    def __reset_plt_for_row_value_column_times_plots(self, columns_times, rows_values):
+        plt.rcParams.update(plt.rcParamsDefault)
+        plt.rcParams.update({'figure.facecolor': 'white', 'axes.facecolor': 'white', 'figure.dpi': 150})
+        fig, axes = plt.subplots(nrows=len(rows_values),
+                                 ncols=len(columns_times),
+                                 sharey='row',
+                                 sharex='col',
+                                 squeeze=0,
+                                 figsize=(20, len(rows_values) * 5),
+                                 gridspec_kw={'width_ratios': self.no_x_values})
+        return axes, fig
+
     def __calculate_stats(self):
         # calculates stats for each time column
         times = {}
-        overall_df = self.__df.copy()
-        overall_df = TranslateIntoTimeseries.add_time_feature_columns(overall_df)
+        overall_df = self.df_with_time_cols.copy()
         for time in self.__time_columns:
             columns = self.__value_columns.copy()
             columns.append(time)
