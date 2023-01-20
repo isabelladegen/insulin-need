@@ -13,7 +13,7 @@ If you want to work with the OpenAPS Data Commons you need to apply and get a co
 You can then use the preprocessing scripts in this project to safe you a lot of work.
 
 This project is the source code for the study published in [paper](https://doi.org/10.48550/arxiv.2211.07393).
-This code is being regularly updated and the version used for the paper was [Tag NeurIPS22_ts4h](/isabelladegen/insulin-need/releases/tag/neurips22_ts4h)
+This code is being regularly updated and the version used for the paper was [Tag NeurIPS22_ts4h](github.com/isabelladegen/insulin-need/releases/tag/neurips22_ts4h)
 If you use any of this code please cite this paper as following in your work:
 
 BibTeX:
