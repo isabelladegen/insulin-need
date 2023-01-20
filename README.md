@@ -1,5 +1,12 @@
 # Finding temporal patterns in insulin needs for people with Type 1 Diabetes
 
+This project preprocesses the OpenAPS Data Commons dataset into .csv files that are time series friendly. 
+It also implements the following pattern finding techniques on this dataset:
+* Statistics - see example [Heatmap Notebook](examples/Heatmap.ipynb)
+* K-means clustering - see example [K-means Notebook](/examples/K-means%20clustering.ipynb)
+* Matrix Profile - see example [Matrix Profile Notebook](examples/Matrix%20Profile.ipynb)
+* Agglomerative Clustering - see example [Agglomerative Clustering Notebook](examples/Agglomerative%20clustering.ipynb)
+
 This project is the source code for the study published in the [paper](https://doi.org/10.48550/arxiv.2211.07393) below. Please cite as following in your work:
 
 BibTeX:

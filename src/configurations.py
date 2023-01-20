@@ -62,7 +62,7 @@ class GeneralisedCols:
 
 
 @dataclass
-class Resampling:
+class   Resampling:
     max_gap_in_min = None
     # how big the gap between two datetime stamps can be
     sample_rule = None
