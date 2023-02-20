@@ -139,25 +139,21 @@ removes those duplicated entries!
 
 ### Resulting CSV File headers
 
-*irregular_iob_cob_bg.csv*:
+*irregular_iob_cob_bg.csv*: system, id, datetime, iob, bg, cob
 
-| system | id | datetime | iob | bg | cob |
-|-----------|-------|-------------|--------|-------|--------|
+*hourly_iob_cob_bg.csv* & *daily_iob_cob_bg.csv*: datetime, id, system, iob mean, cob mean, bg mean, iob min, cob min,
+bg min, iob max, cob max, bg max, iob std, cob std, bg std, iob count, cob count, bg count
 
-*hourly_iob_cob_bg.csv* & *daily_iob_cob_bg.csv*:
-
-| datetime | id | system | iob mean | cob mean | bg mean | iob min | cob min | bg min | iob max | cob max | bg max | iob std | cob std | bg std | iob count | cob count | bg count |
-|---|---|---|---|---|---|---|---|---|---|---------|---|---|---|---|---|---|---|
-
-*bg_df.csv*
-
-| id | time | bg |
-|---|---|---|
+*bg_df.csv* id, time, bg
 
 *device_status_dedubed.csv*
 
-| id |   pump/status/status  |   pump/status/timestamp  |   pump/status/suspended  |   pump/status/bolusing  |   pump/clock  |   device  |   created_at  |   openaps/enacted/duration  |   openaps/enacted/IOB  |   openaps/enacted/rate  |   openaps/enacted/COB  |   openaps/enacted/eventualBG  |   openaps/enacted/reason  |   openaps/enacted/bg  |   openaps/enacted/timestamp  |   openaps/iob/iob  |   openaps/iob/activity  |   openaps/iob/timestamp  |   openaps/iob/basaliob  |   openaps/iob/netbasalinsulin  |   openaps/iob/lastTemp/rate  |   openaps/iob/bolusinsulin  |   openaps/iob/lastBolusTime  |   openaps/enacted/sensitivityRatio  |   openaps/enacted/insulinReq  |   openaps/enacted/deliverAt  |   openaps/enacted/units  |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+id, pump/status/status, pump/status/timestamp, pump/status/suspended, pump/status/bolusing, pump/clock, device ,
+created_at, openaps/enacted/duration, openaps/enacted/IOB, openaps/enacted/rate, openaps/enacted/COB ,
+openaps/enacted/eventualBG, openaps/enacted/reason, openaps/enacted/bg, openaps/enacted/timestamp, openaps/iob/iob ,
+openaps/iob/activity, openaps/iob/timestamp, openaps/iob/basaliob, openaps/iob/netbasalinsulin ,
+openaps/iob/lastTemp/rate, openaps/iob/bolusinsulin, openaps/iob/lastBolusTime, openaps/enacted/sensitivityRatio ,
+openaps/enacted/insulinReq, openaps/enacted/deliverAt, openaps/enacted/units
 
 ### Tests
 
